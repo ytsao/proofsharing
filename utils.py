@@ -12,8 +12,8 @@ import logging
 import logging.handlers
 import datetime
 
-from relaxations import Zonotope_Net, Box_Net, Zonotope  # noqa: F402
-from networks import Network, Normalization  # noqa: F402
+from .relaxations import Zonotope_Net, Box_Net, Zonotope  # noqa: F402
+from .networks import Network, Normalization  # noqa: F402
 
 PATH_EXAMPLES = 'examples/'
 DEVICE = 'cpu'
