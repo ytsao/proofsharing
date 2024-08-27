@@ -3,10 +3,10 @@ from time import time
 
 import torch
 
-import proofsharing.utils.config 
-import proofsharing.utils.utils
-import proofsharing.utils.templates
-from proofsharing.utils.relaxations import Zonotope_Net
+import config 
+import utils
+import templates
+from relaxations import Zonotope_Net
 
 
 def str2bool(v):
