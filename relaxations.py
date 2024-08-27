@@ -1,5 +1,8 @@
 import torch
-import networks
+
+from networks import Normalization
+# import networks
+from .networks import *
 import scipy
 from scipy import spatial, linalg  # noqa: F401
 import numpy as np
@@ -1511,7 +1514,8 @@ class Zonotope_Net:
     def apply_layer(self, idx_layer):
         layer = self.net.layers[idx_layer]
 
-        if isinstance(layer, networks.Normalization):
+        # if isinstance(layer, networks.Normalization):
+        if isinstance(layer, Normalization):
             self.apply_normalization_layer(idx_layer)
         elif isinstance(layer, torch.nn.Linear):
             self.apply_linear_layer(idx_layer)

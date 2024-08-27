@@ -9,7 +9,9 @@ import multiprocessing
 from sklearn import cluster as sklearn_cluster
 
 from relaxations import Zonotope_Net, Star_Net, Box, Parallelotope
-import utils
+from utils import custom_collate
+# import utils
+from .utils import *
 
 logger = logging.getLogger()
 
@@ -380,12 +382,14 @@ class OfflineTemplates:
         if os.path.exists(prefix + '_' + str(self.label) + '_00000.pkl'):
             # Load already precomputed intermediate zonotopes
 
-            intermediate_dataset = utils.IntermediateDataset(
+            # intermediate_dataset = utils.IntermediateDataset(
+            intermediate_dataset = IntermediateDataset(
                 prefix, None, [self.label])
 
             data_loader = torch.utils.data.DataLoader(intermediate_dataset, batch_size=1,
                                                       shuffle=False, num_workers=0,
-                                                      collate_fn=utils.custom_collate)
+                                                    #   collate_fn=utils.custom_collate)
+                                                    collate=custom_collate)
             num_samples = len(data_loader)
 
             for relaxations, label, isPredicted, isVerified in tqdm(data_loader):

@@ -4,8 +4,11 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 import multiprocessing
 from time import time
+
+from utils import TimeLogger
 from .relaxations import Zonotope, Zonotope_Net, Star, Box_Star, Star_Net, Box_Net  # noqa
-import utils
+# import utils
+from .utils import *
 # import config
 import logging
 import gurobipy as gp
@@ -1946,7 +1949,8 @@ class Model():
 
         data_loader = torch.utils.data.DataLoader(dataset, batch_size=1,
                                                   shuffle=False, num_workers=0,
-                                                  collate_fn=utils.custom_collate)
+                                                #   collate_fn=utils.custom_collate)
+                                                    collate_fn=custom_collate)
 
         for relaxations, label, isPredicted, isVerified in tqdm(data_loader):
 
@@ -2748,7 +2752,8 @@ class Model():
         layer_indices = self.layer_indices_from_type(
             params['selected_layers'], params['num_skip_layers'], params['exclude_last_layer'])
 
-        self.timelogger = utils.TimeLogger()
+        # self.timelogger = utils.TimeLogger()
+        self.timelogger = TimeLogger()
         timer_names = ['template_generation', 'initialization', ]
         timer_names += ['layer_{}'.format(i)
                         for i in range(len(self.net.layers))]
@@ -2795,7 +2800,8 @@ class Model():
         t = time()
 
         method = params['patch_template_method']
-        self.timelogger2 = utils.TimeLogger()
+        # self.timelogger2 = utils.TimeLogger()
+        self.timelogger2 = TimeLogger()
         self.timelogger2.add_timers(
             ['first_shrinking', 'order_reduction', 'second_shrinking'])
         self.timelogger2.add_timers(
@@ -2966,7 +2972,8 @@ class Model():
         t = time()
 
         # method = params['patch_template_method']
-        self.timelogger2 = utils.TimeLogger()
+        # self.timelogger2 = utils.TimeLogger()
+        self.timelogger2 = TimeLogger()
         self.timelogger2.add_timers(
             ['first_shrinking', 'order_reduction', 'second_shrinking'])
         self.timelogger2.add_timers(
@@ -2988,7 +2995,8 @@ class Model():
 
                 dilation = False
                 if dilation:
-                    noise_shifted = utils.shift_image(n, 1)
+                    # noise_shifted = utils.shift_image(n, 1)
+                    noise_shifted = shift_image(n, 1) #? why is this not working?
                     noise_shifted.append(n)
 
                     n = torch.cat(noise_shifted, 0).max(0, keepdims=True)[0]
@@ -3687,7 +3695,8 @@ class Model():
         layer_indices = self.layer_indices_from_type(
             params['selected_layers'], params['num_skip_layers'], params['exclude_last_layer'])
 
-        self.timelogger = utils.TimeLogger()
+        # self.timelogger = utils.TimeLogger()
+        self.timelogger = TimeLogger()
         timer_names = ['template_generation', 'initialization', ]
         timer_names += ['layer_{}'.format(i)
                         for i in range(len(self.net.layers))]
@@ -3701,7 +3710,8 @@ class Model():
         for idx_sample in tqdm(range(num_elements), disable=disable_tqdm):
 
             t1 = time()
-            inputs, lower_bounds, upper_bounds, specs = utils.load_deepg_specs(
+            # inputs, lower_bounds, upper_bounds, specs = utils.load_deepg_specs(
+            inputs, lower_bounds, upper_bounds, specs = load_deepg_specs(
                 idx_sample, folder)
             label = self.net(inputs)[0].argmax().item()
 

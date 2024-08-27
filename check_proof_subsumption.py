@@ -1,5 +1,7 @@
 import config
-import utils
+from utils import load_dataset_selected_labels_only, load_net_from_patch_attacks
+# import utils
+from .utils import *
 import templates
 from .relaxations import Box_Net
 import argparse
@@ -10,15 +12,18 @@ def load_net(netname, dataset):
     path = 'examples/{}_nets/{}'.format(dataset, netname)
     file_format = netname.rsplit('.')[1]
     if file_format in ['pth']:
-        return utils.load_net_from_patch_attacks(path)
+        # return utils.load_net_from_patch_attacks(path)
+        return load_net_from_patch_attacks(path)
     elif file_format in ['tf', 'pyt']:
-        return utils.load_net_from_eran_examples(path)
+        # return utils.load_net_from_eran_examples(path)
+        return load_net_from_eran_examples(path)
     else:
         raise RuntimeError
 
 def get_verified_samples(args, N, model, return_activations=False):
     model.to('cpu')
-    dataset  = utils.load_dataset_selected_labels_only('mnist', labels=None)
+    # dataset  = utils.load_dataset_selected_labels_only('mnist', labels=None)
+    dataset = load_dataset_selected_labels_only('mnist', labels=None)
     idx = list(range(len(dataset)))
     random.shuffle(idx)
     cnt = 0
@@ -56,7 +61,8 @@ def get_relaxation_patch(model, inp, label, a, b, c, d):
 
 def verify(args):
     model = load_net(args.model, 'mnist')
-    dataset  = utils.load_dataset_selected_labels_only('mnist', labels=None)
+    # dataset  = utils.load_dataset_selected_labels_only('mnist', labels=None)
+    dataset = load_dataset_selected_labels_only('mnist', labels=None)
     model.to('cpu')
     cnt = len(dataset)
     cnt_verif = 0
