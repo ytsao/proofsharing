@@ -8,8 +8,8 @@ from joblib import Parallel, delayed
 import multiprocessing
 from sklearn import cluster as sklearn_cluster
 
-from relaxations import Zonotope_Net, Star_Net, Box, Parallelotope
-from utils import custom_collate
+from .relaxations import Zonotope_Net, Star_Net, Box, Parallelotope
+# from utils import custom_collate
 # import utils
 from .utils import *
 
