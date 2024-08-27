@@ -1,7 +1,7 @@
 import config
 import utils
 import templates
-from relaxations import Box_Net
+from .relaxations import Box_Net
 import argparse
 from tqdm import tqdm, trange
 import random

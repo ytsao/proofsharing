@@ -4,7 +4,7 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 import multiprocessing
 from time import time
-from relaxations import Zonotope, Zonotope_Net, Star, Box_Star, Star_Net, Box_Net  # noqa
+from .relaxations import Zonotope, Zonotope_Net, Star, Box_Star, Star_Net, Box_Net  # noqa
 import utils
 # import config
 import logging

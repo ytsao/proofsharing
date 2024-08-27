@@ -1,4 +1,4 @@
-from utils import initialize_logger, Stream2Logger
+from .utils import initialize_logger, Stream2Logger
 import sys
 import logging
 
