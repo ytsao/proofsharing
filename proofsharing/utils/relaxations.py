@@ -135,7 +135,6 @@ class Zonotope:
             self._d = constraints[1]
 
     def submatching(self, other):
-
         if (self.lb > other.lb).any() or (self.ub < other.ub).any():
             return False
 
@@ -1766,7 +1765,7 @@ class Zonotope_Net:
 
     def calculate_worst_case(self, true_label, label_maximization=True):
         z = self.relaxation_at_layers[-1]
-
+        
         A_diff = z.A - z.A[:, [true_label]]
         A_diff_abs = torch.sum(A_diff.abs_(), 0, keepdims=True)
 
