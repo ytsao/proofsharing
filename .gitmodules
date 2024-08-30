@@ -1,0 +1,3 @@
+[submodule "examples/deepg/deepg"]
+	path = examples/deepg/deepg
+	url = git@github.com:eth-sri/deepg.git
