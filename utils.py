@@ -18,7 +18,7 @@ from .networks import Network, Normalization  # noqa: F402
 PATH_EXAMPLES = 'examples/'
 DEVICE = 'cpu'
 INPUT_SIZE = (1, 28, 28)
-DOWNLOAD_DATA = True
+DOWNLOAD_DATA = False
 
 
 def runRepl(arg, repl):
