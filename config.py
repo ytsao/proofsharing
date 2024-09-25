@@ -3,11 +3,11 @@ import sys
 import logging
 
 
-def init_logger():
+def init_logger(str_filename: str = None):
     global logger
     global stream
 
-    logger = initialize_logger()
+    logger = initialize_logger(str_filename=str_filename)
     stream = Stream2Logger(sys.stderr, logger, logging.INFO)
 
 
