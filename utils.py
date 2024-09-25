@@ -1099,10 +1099,9 @@ def initialize_logger(str_filename: str = None):
         file_name = str_filename
     file_name = 'log/{}'.format(file_name)
 
-    # if there is no log & examples directory, create it
+    # if there is no log directory, create it
     import pathlib
     pathlib.Path('log').mkdir(parents=True, exist_ok=True)
-    pathlib.Path('examples').mkdir(parents=True, exist_ok=True)
 
     # Generating Logger
     logger = logging.getLogger()
