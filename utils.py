@@ -18,7 +18,7 @@ from .networks import Network, Normalization  # noqa: F402
 PATH_EXAMPLES = 'examples/'
 DEVICE = 'cpu'
 INPUT_SIZE = (1, 28, 28)
-DOWNLOAD_DATA = False
+DOWNLOAD_DATA = True
 
 
 def runRepl(arg, repl):
@@ -1075,7 +1075,7 @@ class Timer:
         return self.cumulative_time / self.count
 
 
-def initialize_logger():
+def initialize_logger(str_filename: str = None):
     # Source: https://github.com/acschaefer/duallog/blob/master/duallog/duallog.py
 
     # Define the log rotation criteria.
@@ -1087,12 +1087,21 @@ def initialize_logger():
     # console_msg_format = '%(levelname)s: %(message)s'
     console_msg_format = '%(message)s'
 
-    file_name_format = '{year:04d}{month:02d}{day:02d}_'\
-        '{hour:02d}{minute:02d}{second:02d}.txt'
-    t = datetime.datetime.now()
-    file_name = file_name_format.format(year=t.year, month=t.month, day=t.day,
-                                        hour=t.hour, minute=t.minute, second=t.second)
+    # * str_filename := filename.txt
+    if str_filename is None:
+        file_name_format = '{year:04d}{month:02d}{day:02d}_'\
+            '{hour:02d}{minute:02d}{second:02d}.txt'
+        t = datetime.datetime.now()
+        file_name = file_name_format.format(year=t.year, month=t.month, day=t.day,
+                                            hour=t.hour, minute=t.minute, second=t.second)
+    else:
+        file_name = str_filename
     file_name = 'log/{}'.format(file_name)
+
+    # if there is no log & examples directory, create it
+    import pathlib
+    pathlib.Path('log').mkdir(parents=True, exist_ok=True)
+    pathlib.Path('examples').mkdir(parents=True, exist_ok=True)
 
     # Generating Logger
     logger = logging.getLogger()
