@@ -15,7 +15,7 @@ import datetime
 from .relaxations import Zonotope_Net, Box_Net, Zonotope  # noqa: F402
 from .networks import Network, Normalization  # noqa: F402
 
-PATH_EXAMPLES = 'examples/'
+PATH_EXAMPLES = '../../data/vnn/examples/'
 DEVICE = 'cpu'
 INPUT_SIZE = (1, 28, 28)
 DOWNLOAD_DATA = True
