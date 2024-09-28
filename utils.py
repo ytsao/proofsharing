@@ -849,7 +849,7 @@ def load_dataset_selected_labels_only(dataset_name, labels=None, num_elements=No
 
 def load_deepg_specs(idx, folder):
     # specs_file = '{}deepg/{}/{}.csv'.format(PATH_EXAMPLES, folder, idx)
-    specs_file = f"../../deepg/{folder}/{idx}.csv"
+    specs_file = f"../../data/vnn/deepg/{folder}/{idx}.csv"
 
     with open(specs_file, 'r') as fin:
         lines = fin.readlines()
