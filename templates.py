@@ -6,6 +6,7 @@ from tqdm import tqdm
 from time import time
 from joblib import Parallel, delayed
 import multiprocessing
+from functools import partial
 from sklearn import cluster as sklearn_cluster
 
 import concurrent.futures
@@ -1075,18 +1076,9 @@ class OfflineTemplates:
     def submatching(self, z, layer):
         assert layer in self.layers
 
-        # for t in self.templates[layer]:
-        #     isSubmatch = t.submatching(z)
-        #     if isSubmatch:
-        #         return True
-        # return False   
+        for t in self.templates[layer]:
+            isSubmatch = t.submatching(z)
+            if isSubmatch:
+                return True
+        return False   
         
-        num_templates = len(self.templates[layer]) 
-        for i in range(0,num_templates-1, 2):
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                p1 = executor.submit(self.templates[layer][i].submatching, z)
-                p2 = executor.submit(self.templates[layer][i+1].submatching, z)
-                
-                if p1.result() or p2.result():
-                    return True
-        return False
