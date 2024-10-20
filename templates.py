@@ -55,10 +55,9 @@ def shrinking_one(input, noise, net, label, relu_transformer, up=1.0, low=1E-3, 
         if isVerified:
             relaxations_net_verified = relaxation_net
 
-    isVerified = relaxations_net_verified is not None    
-    
-    return isVerified, relaxations_net_verified
+    isVerified = relaxations_net_verified is not None
 
+    return isVerified, relaxations_net_verified
 
 
 class OnlineTemplates:
@@ -76,8 +75,9 @@ class OnlineTemplates:
 
         input_list, noise_list = self._get_input_and_noise(inputs, method)
 
-        for input, noise in zip(input_list, noise_list):            
-            isVerified, relaxation_net = shrinking_one(input, noise, self.net, self.label, self.relu_transformer)
+        for input, noise in zip(input_list, noise_list):
+            isVerified, relaxation_net = shrinking_one(
+                input, noise, self.net, self.label, self.relu_transformer)
             if not isVerified:
                 continue
             relaxations = relaxation_net.relaxation_at_layers[1:]
@@ -372,7 +372,6 @@ class OfflineTemplates:
         if max_epsilon:
             naming += '_max'
 
-        
         prefix = path + '/intermediate_zonotopes/' + naming
 
         relaxation_list = []
@@ -390,8 +389,8 @@ class OfflineTemplates:
 
             data_loader = torch.utils.data.DataLoader(intermediate_dataset, batch_size=1,
                                                       shuffle=False, num_workers=0,
-                                                    #   collate_fn=utils.custom_collate)
-                                                    collate=custom_collate)
+                                                      #   collate_fn=utils.custom_collate)
+                                                      collate=custom_collate)
             num_samples = len(data_loader)
 
             for relaxations, label, isPredicted, isVerified in tqdm(data_loader):
@@ -421,10 +420,10 @@ class OfflineTemplates:
                     self.net(inputs), 1) == labels).item()
                 label = labels.item()
 
-
                 if max_epsilon:
                     isVerified, relaxation = shrinking_one(inputs,
-                                                           torch.ones_like(inputs),
+                                                           torch.ones_like(
+                                                               inputs),
                                                            self.net,
                                                            label,
                                                            self.relu_transformer)
@@ -581,7 +580,7 @@ class OfflineTemplates:
             dissimilarity, num_clusters)
 
         cluster_assignments = list(cluster_assignments)
-        assert(len(relaxations) == len(cluster_assignments))
+        assert (len(relaxations) == len(cluster_assignments))
 
         true_num_clusters = len(set(cluster_assignments)) - \
             (1 if -1 in cluster_assignments else 0)

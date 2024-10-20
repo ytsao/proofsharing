@@ -244,7 +244,7 @@ class Zonotope:
             scipy.linalg.null_space(difference_zonotope_np).T)
 
         num_affine_relations = affine_relations.shape[0]
-        assert(num_affine_relations < num_dim)
+        assert (num_affine_relations < num_dim)
 
         if num_affine_relations == 0:
             z_new = self.union_component_wise(other)
@@ -1552,7 +1552,8 @@ class Zonotope_Net:
         A = self.net.bias_free_layers[idx_layer](z.A)
         z_new = self.relaxation_type(a0, A)
 
-        self.relaxation_at_layers.append(z_new)
+        # self.relaxation_at_layers.append(z_new)
+        self.relaxation_at_layers[-1] = z_new
 
     def apply_convolutional_layer(self, idx_layer):
         self.apply_linear_layer(idx_layer)
@@ -1649,7 +1650,8 @@ class Zonotope_Net:
 
         z_new = self.relaxation_type(a0, A)
 
-        self.relaxation_at_layers.append(z_new)
+        # self.relaxation_at_layers.append(z_new)
+        self.relaxation_at_layers[-1] = z_new
 
     def apply_maxpool_layer(self, idx_layer):
         z = self.relaxation_at_layers[-1]
@@ -1769,7 +1771,7 @@ class Zonotope_Net:
 
     def calculate_worst_case(self, true_label, label_maximization=True):
         z = self.relaxation_at_layers[-1]
-        
+
         A_diff = z.A - z.A[:, [true_label]]
         A_diff_abs = torch.sum(A_diff.abs_(), 0, keepdims=True)
 
@@ -2322,10 +2324,10 @@ class Star_Net(Zonotope_Net):
                                 y_prev = y_new * strides[1] + \
                                     y_shift - padding[1]
 
-                                if(x_prev < 0 or x_prev >= shape_prev[1]):
+                                if (x_prev < 0 or x_prev >= shape_prev[1]):
                                     continue
 
-                                if(y_prev < 0 or y_prev >= shape_prev[2]):
+                                if (y_prev < 0 or y_prev >= shape_prev[2]):
                                     continue
 
                                 idx_prev = index_i_factor_prev * c_prev + \
@@ -2478,8 +2480,8 @@ class Star_Net(Zonotope_Net):
                     logger.error('MILP Status: Interrupted')
                     raise RuntimeError
             else:
-                assert(upper_bound[idx_neuron] - val >= -1E-5)
-                assert(lower_bound[idx_neuron] - val <= 1E-5)
+                assert (upper_bound[idx_neuron] - val >= -1E-5)
+                assert (lower_bound[idx_neuron] - val <= 1E-5)
                 upper_bound[idx_neuron] = val
                 if model.Status == GRB.TIME_LIMIT:
                     logger.warn(
@@ -2503,8 +2505,8 @@ class Star_Net(Zonotope_Net):
                     logger.error('MILP Status: Interrupted')
                     raise RuntimeError
             else:
-                assert(upper_bound[idx_neuron] - val >= -1E-5)
-                assert(lower_bound[idx_neuron] - val <= 1E-5)
+                assert (upper_bound[idx_neuron] - val >= -1E-5)
+                assert (lower_bound[idx_neuron] - val <= 1E-5)
                 lower_bound[idx_neuron] = val
                 if model.Status == GRB.TIME_LIMIT:
                     logger.warn('Timelimit hit while tightening bounds',
