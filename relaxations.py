@@ -1542,7 +1542,8 @@ class Zonotope_Net:
         A = z.A.div(sigma)
         z_new = self.relaxation_type(a0, A)
 
-        self.relaxation_at_layers.append(z_new)
+        # self.relaxation_at_layers.append(z_new)
+        self.relaxation_at_layers[-1] = z_new
 
     def apply_linear_layer(self, idx_layer):
         layer = self.net.layers[idx_layer]
@@ -1566,7 +1567,8 @@ class Zonotope_Net:
         A = layer(z.A)
         z_new = self.relaxation_type(a0, A)
 
-        self.relaxation_at_layers.append(z_new)
+        # self.relaxation_at_layers.append(z_new)
+        self.relaxation_at_layers[-1] = z_new
 
     def apply_relu_layer(self, idx_layer):
         z = self.relaxation_at_layers[-1]
@@ -1767,7 +1769,8 @@ class Zonotope_Net:
                         num_channels, height // 2, width // 2))
         z_new = self.relaxation_type(a0, A)
 
-        self.relaxation_at_layers.append(z_new)
+        # self.relaxation_at_layers.append(z_new)
+        self.relaxation_at_layers[-1] = z_new
 
     def calculate_worst_case(self, true_label, label_maximization=True):
         z = self.relaxation_at_layers[-1]
