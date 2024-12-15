@@ -325,8 +325,8 @@ def load_net_from_acasxu(file_name):
 
 
 def load_net_from_patch_attacks(file_name):
-
     load_dict = torch.load(file_name, map_location=torch.device(DEVICE))
+    print(f"keys : {load_dict.keys()}")
     state_dict_load = load_dict['state_dict']
     layers = load_dict['model_layers']
 
@@ -340,7 +340,6 @@ def load_net_from_patch_attacks(file_name):
     nonlinearity_after_conv = 'relu'
 
     input_size = get_input_size_from_file(file_name)
-
     for layer in layers:
         if layer['type'] == 'Linear':
             fc_layers.append(layer['parameters'][1])
@@ -381,8 +380,12 @@ def load_net_from_patch_attacks(file_name):
         else:
             print('Unknown layer type: {}'.format(key))
 
-    net = Network(DEVICE, input_size, conv_layers, fc_layers,
-                  10, use_normalization, nonlinearity_after_conv, mean=mean, sigma=sigma)
+    if "Toy" in file_name:
+        net = Network(DEVICE, input_size, conv_layers, fc_layers, 1, use_normalization, nonlinearity_after_conv, mean=mean, sigma=sigma)
+    elif "Ex" in file_name:
+        net = Network(DEVICE, input_size, conv_layers, fc_layers, 2, use_normalization, nonlinearity_after_conv, mean=mean, sigma=sigma)
+    else:
+        net = Network(DEVICE, input_size, conv_layers, fc_layers, 10, use_normalization, nonlinearity_after_conv, mean=mean, sigma=sigma)
 
     for layer in net.layers:
         if isinstance(layer, (torch.nn.Linear, torch.nn.Conv2d)):
@@ -400,9 +403,11 @@ def get_input_size_from_file(file_name):
         input_size = (1, 28, 28)
     elif 'cifar' in file_name:
         input_size = (3, 32, 32)
-    else:
-        print('Unknown Dataset for file {}'.format(file_name))
-        raise NotImplementedError
+    else: # toy, caterian, deeppoly
+        input_size = (1, 1, 2)
+    # else:
+    #     print('Unknown Dataset for file {}'.format(file_name))
+    #     raise NotImplementedError
 
     return input_size
 
