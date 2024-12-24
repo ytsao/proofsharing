@@ -41,3 +41,6 @@ class config:
     # Proof Transfer Offline
     template_dir = (None, 'Path to templates')
     num_templates = (25, 'Number of templates should be used at most.')
+    
+    # Number of post-conditions should be generated in BaFA framework.
+    num_post_cons = (1, "Number of post conditions.")
