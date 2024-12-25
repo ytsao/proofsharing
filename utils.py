@@ -1,5 +1,6 @@
 import os
 import pickle
+import onnx
 import torch
 from torchvision import datasets, transforms
 import numpy as np
@@ -161,6 +162,45 @@ def load_net_self_trained(path):
 
     return net
 
+def load_net_from_onnx(file_name):
+    conv_layers: list = []
+    fc_layers: list = []
+    weights: list = [] 
+    biases: list = [] 
+    use_normalization: bool = False
+    mean: float = 0.1307
+    sigma: float = 0.3081
+    nonlinearity_after_conv: str = "relu"
+    
+    input_size: int = get_input_size_from_file(file_name)
+    model = onnx.load(file_name)
+    graph = model.graph
+    for initializer in graph.initializer:
+        param_name = initializer.name
+        param_dim = [dim for dim in initializer.dims]
+        param_data = onnx.numpy_helper.to_array(initializer)
+        if "conv.weight" in param_name:
+            weights.append(param_data)
+        elif "conv.bias" in param_name:
+            biases.append(param_data)
+        elif ".weight" in param_name or "linear.weight" in param_name:
+            weights.append(param_data)
+            fc_layers.append(param_dim[1])
+        elif ".bias" in param_name or "linear.bias" in param_name:
+            biases.append(param_data)
+        else:
+            print("[ERROR] Unknown layer name.")
+    
+    net = Network(DEVICE, input_size, conv_layers, fc_layers,
+                  10, use_normalization, nonlinearity_after_conv, mean=mean, sigma=sigma)
+    
+    for layer in net.layers:
+        if isinstance(layer, (torch.nn.Linear, torch.nn.Conv2d)):
+            layer.weight = torch.nn.Parameter(weights.pop(0), False)
+            layer.bias = torch.nn.Parameter(biases.pop(0), False)
+    
+    net.update_bias_free_layers()
+    return net
 
 def load_net_from_eran_examples(file_name):
 
