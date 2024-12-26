@@ -44,3 +44,4 @@ class config:
     
     # Number of post-conditions should be generated in BaFA framework.
     num_post_cons = (1, "Number of post conditions.")
+    vnnlib_file = (None, "vnnlib file location.")
