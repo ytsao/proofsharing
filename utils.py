@@ -179,17 +179,25 @@ def load_net_from_onnx(file_name):
         param_name = initializer.name
         param_dim = [dim for dim in initializer.dims]
         param_data = onnx.numpy_helper.to_array(initializer)
+        param_data = torch.from_numpy(param_data) 
+        print(f"param_name = {param_name}")
+        print(f"param_dim = {param_dim}")
         if "conv.weight" in param_name:
             weights.append(param_data)
         elif "conv.bias" in param_name:
             biases.append(param_data)
         elif ".weight" in param_name or "linear.weight" in param_name:
             weights.append(param_data)
-            fc_layers.append(param_dim[1])
+            fc_layers.append(param_dim[0])
+        elif "MatMul" in param_name: 
+            weights.append(param_data)
+            biases.append(torch.zeros(1))
+            fc_layers.append(param_dim[0]) 
         elif ".bias" in param_name or "linear.bias" in param_name:
             biases.append(param_data)
         else:
-            print("[ERROR] Unknown layer name.")
+            print(f"[ERROR] Unknown layer name = {param_name}.")
+            print(f"param_data = {param_data}")
     
     net = Network(DEVICE, input_size, conv_layers, fc_layers,
                   10, use_normalization, nonlinearity_after_conv, mean=mean, sigma=sigma)
@@ -443,6 +451,8 @@ def get_input_size_from_file(file_name):
         input_size = (1, 28, 28)
     elif 'cifar' in file_name:
         input_size = (3, 32, 32)
+    elif 'onnx' in file_name:
+        input_size = (1, 28, 28)
     else: # toy, caterian, deeppoly
         input_size = (1, 1, 2)
     # else:

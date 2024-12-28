@@ -68,7 +68,6 @@ class Network(nn.Module):
         self.idx_layer_full += 1
 
         num_channels = self.create_fc_layers(layers, fc_layers, num_channels)
-
         assert(n_class == num_channels)
 
         self.layers = nn.Sequential(*layers)
@@ -134,7 +133,6 @@ class Network(nn.Module):
             self.idx_layer_short += 1
 
             if self.idx_layer_short in self.auxiliary_outputs_layers:
-
                 self.aux_outputs[self.idx_layer_full] = \
                     nn.Sequential(nn.Linear(fc_size, self.n_class))
 

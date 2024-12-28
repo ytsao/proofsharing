@@ -1768,19 +1768,27 @@ class Zonotope_Net:
         self.relaxation_at_layers.append(z_new)
 
     def calculate_worst_case(self, true_label, label_maximization=True):
+        # z = self.relaxation_at_layers[-1]
+
+        # A_diff = z.A - z.A[:, [true_label]]
+        # A_diff_abs = torch.sum(A_diff.abs_(), 0, keepdims=True)
+
+        # if label_maximization:
+        #     self.y = z.a0 + A_diff_abs
+        #     most_likely_label = torch.argmax(self.y)
+        # else:
+        #     self.y = z.a0 - A_diff_abs
+        #     most_likely_label = torch.argmin(self.y)
+
+        # return (most_likely_label == true_label).item()
+        
         z = self.relaxation_at_layers[-1]
-
-        A_diff = z.A - z.A[:, [true_label]]
-        A_diff_abs = torch.sum(A_diff.abs_(), 0, keepdims=True)
-
-        if label_maximization:
-            self.y = z.a0 + A_diff_abs
-            most_likely_label = torch.argmax(self.y)
-        else:
-            self.y = z.a0 - A_diff_abs
-            most_likely_label = torch.argmin(self.y)
-
-        return (most_likely_label == true_label).item()
+        for i in range(z.lb.size(dim=1)):
+            if i != true_label:
+                if z.lb[0][true_label] >= z.ub[0][i]: continue
+                else: return False 
+        
+        return True 
 
     def truncate(self, layer=0):
         if len(self.relaxation_at_layers) > 1:
