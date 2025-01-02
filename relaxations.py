@@ -1781,7 +1781,10 @@ class Zonotope_Net:
         #     most_likely_label = torch.argmin(self.y)
 
         # return (most_likely_label == true_label).item()
-        
+       
+        # I'm not sure if this implementation is correct, 
+        # Because when I used this way to identify if the network is trustworthy
+        # The results are very bad except the networks from proofsharing. 
         z = self.relaxation_at_layers[-1]
         for i in range(z.lb.size(dim=1)):
             if i != true_label:

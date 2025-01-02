@@ -1,6 +1,8 @@
 import os
 import pickle
 import onnx
+import onnxruntime as ort
+import onnx2pytorch
 import torch
 from torchvision import datasets, transforms
 import numpy as np
@@ -163,51 +165,53 @@ def load_net_self_trained(path):
     return net
 
 def load_net_from_onnx(file_name):
-    conv_layers: list = []
-    fc_layers: list = []
-    weights: list = [] 
-    biases: list = [] 
-    use_normalization: bool = False
-    mean: float = 0.1307
-    sigma: float = 0.3081
-    nonlinearity_after_conv: str = "relu"
+    pytorch_model = onnx2pytorch.ConvertModel(onnx.load(file_name), experimental=True)
+    model_layers = []
+    for p in pytorch_model.named_parameters():
+        if ".weight" in p[0]:
+            model_layers.append({"type": "Linear",
+                                "parameters": [p[1].shape[1], p[1].shape[0]]})
+        elif ".bias" in p[0]:
+            model_layers.append({"type": "ReLU"})
+    load_dict = {
+        "state_dict": pytorch_model.state_dict(),
+        "model_layers": model_layers
+    }
+    state_dict_load = load_dict["state_dict"]
+    layers = load_dict["model_layers"]
     
-    input_size: int = get_input_size_from_file(file_name)
-    model = onnx.load(file_name)
-    graph = model.graph
-    for initializer in graph.initializer:
-        param_name = initializer.name
-        param_dim = [dim for dim in initializer.dims]
-        param_data = onnx.numpy_helper.to_array(initializer)
-        param_data = torch.from_numpy(param_data) 
-        print(f"param_name = {param_name}")
-        print(f"param_dim = {param_dim}")
-        if "conv.weight" in param_name:
-            weights.append(param_data)
-        elif "conv.bias" in param_name:
-            biases.append(param_data)
-        elif ".weight" in param_name or "linear.weight" in param_name:
-            weights.append(param_data)
-            fc_layers.append(param_dim[0])
-        elif "MatMul" in param_name: 
-            weights.append(param_data)
-            biases.append(torch.zeros(1))
-            fc_layers.append(param_dim[0]) 
-        elif ".bias" in param_name or "linear.bias" in param_name:
-            biases.append(param_data)
-        else:
-            print(f"[ERROR] Unknown layer name = {param_name}.")
-            print(f"param_data = {param_data}")
+    conv_layers = []
+    fc_layers = []
+    weights = []
+    biases = []
+    use_normalization = False
+    mean = 0
+    sigma = 1
+    nonlinearity_after_conv = "relu"
+    isLastLayerReLU = False
     
-    net = Network(DEVICE, input_size, conv_layers, fc_layers,
-                  10, use_normalization, nonlinearity_after_conv, mean=mean, sigma=sigma)
+    input_size = get_input_size_from_file(file_name)
+    for id, layer in enumerate(layers):
+        if layer["type"] == "Linear":
+            fc_layers.append(layer["parameters"][1])
+        elif layer["type"] == "ReLU":
+            if id == len(layers) - 1: isLastLayerReLU = True
     
+    for key in state_dict_load.keys():
+        if ".weight" in key:
+            weights.append(state_dict_load[key])
+        elif ".bias" in key:
+            biases.append(state_dict_load[key])
+    
+    net = Network(DEVICE, input_size, conv_layers, fc_layers, 10,
+                  use_normalization, nonlinearity_after_conv, isLastLayerReLU=isLastLayerReLU, mean=mean, sigma=sigma)
     for layer in net.layers:
         if isinstance(layer, (torch.nn.Linear, torch.nn.Conv2d)):
+
             layer.weight = torch.nn.Parameter(weights.pop(0), False)
             layer.bias = torch.nn.Parameter(biases.pop(0), False)
-    
     net.update_bias_free_layers()
+    
     return net
 
 def load_net_from_eran_examples(file_name):
@@ -383,12 +387,15 @@ def load_net_from_patch_attacks(file_name):
     weights = []
     biases = []
     use_normalization = False
-    mean = 0.1307
-    sigma = 0.3081
+    # mean = 0.1307
+    # sigma = 0.3081
+    mean = 0
+    sigma = 1 
     nonlinearity_after_conv = 'relu'
+    isLastLayerReLU = False
 
     input_size = get_input_size_from_file(file_name)
-    for layer in layers:
+    for id, layer in enumerate(layers):
         if layer['type'] == 'Linear':
             fc_layers.append(layer['parameters'][1])
 
@@ -406,7 +413,7 @@ def load_net_from_patch_attacks(file_name):
             mean = layer['weights'][0]
             sigma = layer['weights'][1]
         elif layer['type'] == 'ReLU':
-            pass
+            if id == len(layers) - 1: isLastLayerReLU = True
         elif layer['type'] == 'MaxPool':
             nonlinearity_after_conv = 'max'
             print(conv_layers[-1], (layer.kernel_size,))
@@ -433,7 +440,7 @@ def load_net_from_patch_attacks(file_name):
     elif "Ex" in file_name:
         net = Network(DEVICE, input_size, conv_layers, fc_layers, 2, use_normalization, nonlinearity_after_conv, mean=mean, sigma=sigma)
     else:
-        net = Network(DEVICE, input_size, conv_layers, fc_layers, 10, use_normalization, nonlinearity_after_conv, mean=mean, sigma=sigma)
+        net = Network(DEVICE, input_size, conv_layers, fc_layers, 10, use_normalization, nonlinearity_after_conv, isLastLayerReLU=isLastLayerReLU, mean=mean, sigma=sigma)
 
     for layer in net.layers:
         if isinstance(layer, (torch.nn.Linear, torch.nn.Conv2d)):

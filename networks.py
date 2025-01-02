@@ -26,9 +26,9 @@ class Normalization(nn.Module):
 class Network(nn.Module):
     def __init__(self, device, input_size, conv_layers, fc_layers, n_class=10,
                  normalization=True, nonlinearity_after_conv='relu',
-                 auxiliary_outputs_layers=None, mean=0.1307, sigma=0.3081):
+                 auxiliary_outputs_layers=None, isLastLayerReLU=False, mean=0.1307, sigma=0.3081):
         super(Network, self).__init__()
-        self.input_size = input_size
+        self.input_size = input_size    
 
         if auxiliary_outputs_layers is None:
             self.use_auxiliary_outputs = False
@@ -37,6 +37,7 @@ class Network(nn.Module):
             self.use_auxiliary_outputs = True
             self.auxiliary_outputs_layers = auxiliary_outputs_layers
 
+        self.isLastLayerReLU = isLastLayerReLU
         self.create_architecture(
             input_size, n_class, device, conv_layers, fc_layers,
             normalization, mean, sigma, nonlinearity_after_conv)
@@ -45,6 +46,7 @@ class Network(nn.Module):
 
         self.single_sign_weight_layers = None
         self.absolute_layers_without_bias = None
+        
 
     def create_architecture(self, input_size, n_class, device, conv_layers,
                             fc_layers, normalization, mean, sigma, nonlinearity_after_conv):
@@ -124,7 +126,7 @@ class Network(nn.Module):
         for i, fc_size in enumerate(fc_layers):
             layers.append(nn.Linear(prev_fc_size, fc_size))
 
-            if i + 1 < len(fc_layers):
+            if i + (1-self.isLastLayerReLU) < len(fc_layers):
                 layers.append(nn.ReLU())
 
             prev_fc_size = fc_size
