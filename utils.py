@@ -164,15 +164,19 @@ def load_net_self_trained(path):
 
     return net
 
-def load_net_from_onnx(file_name):
+def load_net_from_onnx(file_name, dataset):
     pytorch_model = onnx2pytorch.ConvertModel(onnx.load(file_name), experimental=True)
     model_layers = []
+    
     for p in pytorch_model.named_parameters():
+        print(p[0])
         if ".weight" in p[0]:
             model_layers.append({"type": "Linear",
                                 "parameters": [p[1].shape[1], p[1].shape[0]]})
         elif ".bias" in p[0]:
             model_layers.append({"type": "ReLU"})
+    
+    print(f"model_layers = {model_layers}")
     load_dict = {
         "state_dict": pytorch_model.state_dict(),
         "model_layers": model_layers
@@ -184,9 +188,17 @@ def load_net_from_onnx(file_name):
     fc_layers = []
     weights = []
     biases = []
-    use_normalization = False
+    use_normalization = True
     mean = 0
     sigma = 1
+    
+    if "ffnnRELU" in file_name and dataset == "mnist":
+        mean = 0.1307000070810318
+        sigma = 0.30810001492500305
+    if dataset == "cifar": 
+        mean = [0.49140000343322754, 0.482200026512146, 0.4465000033378601]
+        sigma = [0.20230001211166382, 0.19940000772476196, 0.20100000500679016]
+    
     nonlinearity_after_conv = "relu"
     isLastLayerReLU = False
     
