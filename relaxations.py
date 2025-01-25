@@ -3098,24 +3098,32 @@ class Box_Net(Zonotope_Net):
 
     def calculate_worst_case(self, true_label, label_maximization=True):
 
-        a0 = self.relaxation_at_layers[-1].a0
-        A = (self.relaxation_at_layers[-2].ub -
-             self.relaxation_at_layers[-2].lb) / 2
-        W_last = self.net.layers[-1].weight.data
+        # a0 = self.relaxation_at_layers[-1].a0
+        # A = (self.relaxation_at_layers[-2].ub -
+        #      self.relaxation_at_layers[-2].lb) / 2
+        # W_last = self.net.layers[-1].weight.data
 
-        num_labels = a0.numel()
+        # num_labels = a0.numel()
 
-        W_select = torch.eye(num_labels)
-        W_select[:, true_label] -= 1
+        # W_select = torch.eye(num_labels)
+        # W_select[:, true_label] -= 1
 
-        a0_new = W_select.matmul(a0.transpose(0, 1))
-        A_new = W_select.matmul(W_last).abs_().matmul(A.transpose(0, 1))
+        # a0_new = W_select.matmul(a0.transpose(0, 1))
+        # A_new = W_select.matmul(W_last).abs_().matmul(A.transpose(0, 1))
 
-        if label_maximization:
-            self.y = a0_new + A_new
-            most_likely_label = torch.argmax(self.y)
-        else:
-            self.y = a0_new - A_new
-            most_likely_label = torch.argmin(self.y)
+        # if label_maximization:
+        #     self.y = a0_new + A_new
+        #     most_likely_label = torch.argmax(self.y)
+        # else:
+        #     self.y = a0_new - A_new
+        #     most_likely_label = torch.argmin(self.y)
 
-        return (most_likely_label == true_label).item()
+        # return (most_likely_label == true_label).item()
+        
+        b = self.relaxation_at_layers[-1]
+        for i in range(b.lb.size(dim=1)):
+            if i != true_label:
+                if b.lb[0][true_label] >= b.ub[0][i]: continue
+                else: return False 
+                
+        return True
