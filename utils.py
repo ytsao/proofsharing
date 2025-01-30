@@ -169,14 +169,14 @@ def load_net_from_onnx(file_name, dataset):
     model_layers = []
     
     for p in pytorch_model.named_parameters():
-        print(p[0])
+        # print(p[0])
         if ".weight" in p[0]:
             model_layers.append({"type": "Linear",
                                 "parameters": [p[1].shape[1], p[1].shape[0]]})
         elif ".bias" in p[0]:
             model_layers.append({"type": "ReLU"})
     
-    print(f"model_layers = {model_layers}")
+    # print(f"model_layers = {model_layers}")
     load_dict = {
         "state_dict": pytorch_model.state_dict(),
         "model_layers": model_layers
@@ -202,7 +202,8 @@ def load_net_from_onnx(file_name, dataset):
     nonlinearity_after_conv = "relu"
     isLastLayerReLU = False
     
-    input_size = get_input_size_from_file(file_name)
+    # input_size = get_input_size_from_file(file_name)
+    input_size = get_input_size_from_dataset(dataset)
     for id, layer in enumerate(layers):
         if layer["type"] == "Linear":
             fc_layers.append(layer["parameters"][1])
@@ -226,7 +227,7 @@ def load_net_from_onnx(file_name, dataset):
     
     return net
 
-def load_net_from_eran_examples(file_name):
+def load_net_from_eran_examples(file_name, dataset):
 
     conv_layers = []
     fc_layers = []
@@ -236,7 +237,8 @@ def load_net_from_eran_examples(file_name):
     mean = 0.1307
     sigma = 0.3081
 
-    input_size = get_input_size_from_file(file_name)
+    # input_size = get_input_size_from_file(file_name)
+    input_size = get_input_size_from_dataset(dataset)
 
     lines = open(file_name, 'r')
     while True:
@@ -388,7 +390,7 @@ def load_net_from_acasxu(file_name):
     return net
 
 
-def load_net_from_patch_attacks(file_name):
+def load_net_from_patch_attacks(file_name, dataset):
     load_dict = torch.load(file_name, map_location=torch.device(DEVICE))
     print(f"keys : {load_dict.keys()}")
     state_dict_load = load_dict['state_dict']
@@ -399,14 +401,15 @@ def load_net_from_patch_attacks(file_name):
     weights = []
     biases = []
     use_normalization = False
-    # mean = 0.1307
-    # sigma = 0.3081
-    mean = 0
-    sigma = 1 
+    mean = 0.1307
+    sigma = 0.3081
+    # mean = 0
+    # sigma = 1 
     nonlinearity_after_conv = 'relu'
     isLastLayerReLU = False
 
-    input_size = get_input_size_from_file(file_name)
+    # input_size = get_input_size_from_file(file_name)
+    input_size = get_input_size_from_dataset(dataset)
     for id, layer in enumerate(layers):
         if layer['type'] == 'Linear':
             fc_layers.append(layer['parameters'][1])
@@ -439,7 +442,6 @@ def load_net_from_patch_attacks(file_name):
             print('Unknown layer:', layer)
 
     for key in state_dict_load.keys():
-
         if '.weight' in key:
             weights.append(state_dict_load[key])
         elif '.bias' in key:
@@ -456,16 +458,22 @@ def load_net_from_patch_attacks(file_name):
 
     for layer in net.layers:
         if isinstance(layer, (torch.nn.Linear, torch.nn.Conv2d)):
-
             layer.weight = torch.nn.Parameter(weights.pop(0), False)
             layer.bias = torch.nn.Parameter(biases.pop(0), False)
 
     net.update_bias_free_layers()
     return net
 
+def get_input_size_from_dataset(dataset):
+    if dataset == "mnist":
+        input_size = (1, 28, 28)
+    elif dataset == "cifar":
+        input_size = (3, 32, 32)
+    
+    return input_size
+
 
 def get_input_size_from_file(file_name):
-
     if 'mnist' in file_name:
         input_size = (1, 28, 28)
     elif 'cifar' in file_name:
