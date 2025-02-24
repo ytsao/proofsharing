@@ -18,16 +18,16 @@ import datetime
 from .relaxations import Zonotope_Net, Box_Net, Zonotope  # noqa: F402
 from .networks import Network, Normalization  # noqa: F402
 
-PATH_EXAMPLES = '../../data/vnn/examples/'
-DEVICE = 'cpu'
+PATH_EXAMPLES = "../../data/vnn/examples/"
+DEVICE = "cpu"
 INPUT_SIZE = (1, 28, 28)
 DOWNLOAD_DATA = True
 
 
 def runRepl(arg, repl):
     for a in repl:
-        arg = arg.replace(a+"=", "'"+a+"':")
-    return eval("{"+arg+"}")
+        arg = arg.replace(a + "=", "'" + a + "':")
+    return eval("{" + arg + "}")
 
 
 def parseVec(lines):
@@ -35,12 +35,11 @@ def parseVec(lines):
 
 
 def extract_mean(text):
-
-    m = re.search('mean=\[(.+?)\]', text)  # noqa: W605
+    m = re.search("mean=\[(.+?)\]", text)  # noqa: W605
 
     if m:
         means = m.group(1)
-    mean_str = means.split(',')
+    mean_str = means.split(",")
     num_means = len(mean_str)
     mean_array = np.zeros(num_means)
     for i in range(num_means):
@@ -49,11 +48,10 @@ def extract_mean(text):
 
 
 def extract_std(text):
-
-    m = re.search('std=\[(.+?)\]', text)  # noqa: W605
+    m = re.search("std=\[(.+?)\]", text)  # noqa: W605
     if m:
         stds = m.group(1)
-    std_str = stds.split(',')
+    std_str = stds.split(",")
     num_std = len(std_str)
     std_array = np.zeros(num_std)
     for i in range(num_std):
@@ -66,44 +64,45 @@ def save_net_self_trained(net, path):
     for layer in net.layers:
         current_layer = {}
         if isinstance(layer, torch.nn.Linear):
-            current_layer['type'] = 'Linear'
-            current_layer['parameters'] = [
-                layer.in_features, layer.out_features]
-            current_layer['weights'] = (
-                layer.weight.data, layer.bias.data)
+            current_layer["type"] = "Linear"
+            current_layer["parameters"] = [layer.in_features, layer.out_features]
+            current_layer["weights"] = (layer.weight.data, layer.bias.data)
 
         elif isinstance(layer, torch.nn.Conv2d):
-            current_layer['type'] = 'Conv'
-            current_layer['parameters'] = [
-                layer.in_channels, layer.out_channels, layer.kernel_size, layer.stride, layer.padding]
-            current_layer['weights'] = (
-                layer.weight.data, layer.bias.data)
+            current_layer["type"] = "Conv"
+            current_layer["parameters"] = [
+                layer.in_channels,
+                layer.out_channels,
+                layer.kernel_size,
+                layer.stride,
+                layer.padding,
+            ]
+            current_layer["weights"] = (layer.weight.data, layer.bias.data)
         elif isinstance(layer, Normalization):
-            current_layer['type'] = 'Normalization'
-            current_layer['weights'] = (
-                layer.mean.data, layer.sigma.data)
+            current_layer["type"] = "Normalization"
+            current_layer["weights"] = (layer.mean.data, layer.sigma.data)
         elif isinstance(layer, torch.nn.ReLU):
-            current_layer['type'] = 'ReLU'
+            current_layer["type"] = "ReLU"
         elif isinstance(layer, torch.nn.MaxPool2d):
-            current_layer['type'] = 'MaxPool'
-            current_layer['parameters'] = [layer.kernel_size]
+            current_layer["type"] = "MaxPool"
+            current_layer["parameters"] = [layer.kernel_size]
         elif isinstance(layer, torch.nn.AvgPool2d):
-            current_layer['type'] = 'AvgPool'
-            current_layer['parameters'] = [layer.kernel_size]
+            current_layer["type"] = "AvgPool"
+            current_layer["parameters"] = [layer.kernel_size]
         elif isinstance(layer, torch.nn.Flatten):
-            current_layer['type'] = 'Flatten'
+            current_layer["type"] = "Flatten"
         else:
-            print('Unknown layer:', layer)
+            print("Unknown layer:", layer)
         layer_list.append(current_layer)
 
         # print(current_layer)
 
-    pickle.dump(layer_list, open(path, 'wb'))
-    print('Net saved to {}'.format(path))
+    pickle.dump(layer_list, open(path, "wb"))
+    print("Net saved to {}".format(path))
 
 
 def load_net_self_trained(path):
-    layers = pickle.load(open(path, 'rb'))
+    layers = pickle.load(open(path, "rb"))
 
     conv_layers = []
     fc_layers = []
@@ -112,20 +111,20 @@ def load_net_self_trained(path):
     use_normalization = False
     mean = 0.1307
     sigma = 0.3081
-    nonlinearity_after_conv = 'relu'
+    nonlinearity_after_conv = "relu"
 
     input_size = get_input_size_from_file(path)
 
     for layer in layers:
-        if layer['type'] == 'Linear':
-            weights.append(layer['weights'][0])
-            biases.append(layer['weights'][1])
-            fc_layers.append(layer['parameters'][1])
+        if layer["type"] == "Linear":
+            weights.append(layer["weights"][0])
+            biases.append(layer["weights"][1])
+            fc_layers.append(layer["parameters"][1])
 
-        elif layer['type'] == 'Conv':
-            weights.append(layer['weights'][0])
-            biases.append(layer['weights'][1])
-            params = layer['parameters'][1:]
+        elif layer["type"] == "Conv":
+            weights.append(layer["weights"][0])
+            biases.append(layer["weights"][1])
+            params = layer["parameters"][1:]
             param_list = []
             for param in params:
                 if isinstance(param, tuple):
@@ -134,27 +133,36 @@ def load_net_self_trained(path):
 
             conv_layers.append(tuple(param_list))
 
-        elif layer['type'] == 'Normalization':
+        elif layer["type"] == "Normalization":
             use_normalization = True
-            mean = layer['weights'][0]
-            sigma = layer['weights'][1]
+            mean = layer["weights"][0]
+            sigma = layer["weights"][1]
 
-        elif layer['type'] == 'ReLU':
+        elif layer["type"] == "ReLU":
             pass
-        elif layer['type'] == 'MaxPool':
-            nonlinearity_after_conv = 'max'
+        elif layer["type"] == "MaxPool":
+            nonlinearity_after_conv = "max"
             print(conv_layers[-1], (layer.kernel_size,))
             conv_layers[-1] = conv_layers[-1] + (layer.kernel_size,)
-        elif layer['type'] == 'AvgPool':
-            nonlinearity_after_conv = 'average'
+        elif layer["type"] == "AvgPool":
+            nonlinearity_after_conv = "average"
             conv_layers[-1] = conv_layers[-1] + (layer.kernel_size,)
-        elif layer['type'] == 'Flatten':
+        elif layer["type"] == "Flatten":
             pass
         else:
-            print('Unknown layer:', layer)
+            print("Unknown layer:", layer)
 
-    net = Network(DEVICE, input_size, conv_layers, fc_layers,
-                  10, use_normalization, nonlinearity_after_conv, mean=mean, sigma=sigma)
+    net = Network(
+        DEVICE,
+        input_size,
+        conv_layers,
+        fc_layers,
+        10,
+        use_normalization,
+        nonlinearity_after_conv,
+        mean=mean,
+        sigma=sigma,
+    )
 
     for layer in net.layers:
         if isinstance(layer, (torch.nn.Linear, torch.nn.Conv2d)):
@@ -164,26 +172,59 @@ def load_net_self_trained(path):
 
     return net
 
+
 def load_net_from_onnx(file_name, dataset):
+    onnx_model = onnx.load(file_name)
+    # Access the model's graph
+    graph = onnx_model.graph
+
+    # Iterate through the nodes in the graph to find Conv operators
+    kernel_size = []
+    stride = []
+    padding = []
+    for node in graph.node:
+        if node.op_type == "Conv":
+            # Access the kernel size (kernel_shape) attribute
+            for attribute in node.attribute:
+                if attribute.name == "kernel_shape":
+                    kernel_size.append(attribute.ints)
+                elif attribute.name == "strides":
+                    stride.append(attribute.ints)
+                elif attribute.name == "pads":
+                    padding.append(attribute.ints)
+
     pytorch_model = onnx2pytorch.ConvertModel(onnx.load(file_name), experimental=True)
     model_layers = []
-    
+
+    # TODO: We have to consider convolutional layers. this version takes linear layer into account only.
+    current_conv_id: int = 0
     for p in pytorch_model.named_parameters():
-        # print(p[0])
-        if ".weight" in p[0]:
-            model_layers.append({"type": "Linear",
-                                "parameters": [p[1].shape[1], p[1].shape[0]]})
-        elif ".bias" in p[0]:
+        if p[0].startswith("Gemm") and ".weight" in p[0]:
+            model_layers.append(
+                {"type": "Linear", "parameters": [p[1].shape[1], p[1].shape[0]]}
+            )
+        elif p[0].startswith("Gemm") and ".bias" in p[0] and "output" not in p[0]:
             model_layers.append({"type": "ReLU"})
-    
-    # print(f"model_layers = {model_layers}")
-    load_dict = {
-        "state_dict": pytorch_model.state_dict(),
-        "model_layers": model_layers
-    }
+        elif p[0].startswith("Conv") and ".weight" in p[0]:
+            model_layers.append(
+                {
+                    "type": "Conv2d",
+                    "parameters": [
+                        p[1].shape[0],
+                        kernel_size[current_conv_id][0],
+                        stride[current_conv_id][0],
+                        padding[current_conv_id][0],
+                    ],  # Assume all the filters are square.
+                }
+            )
+            current_conv_id += 1
+        elif p[0].startswith("Conv") and ".bias" in p[0]:
+            model_layers.append({"type": "ReLU"})
+
+    load_dict = {"state_dict": pytorch_model.state_dict(), "model_layers": model_layers}
     state_dict_load = load_dict["state_dict"]
     layers = load_dict["model_layers"]
-    
+
     conv_layers = []
     fc_layers = []
     weights = []
@@ -191,44 +232,56 @@ def load_net_from_onnx(file_name, dataset):
     use_normalization = True
     mean = 0
     sigma = 1
-    
-    if "ffnnRELU" in file_name and dataset == "mnist":
+
+    if ("ffnnRELU" in file_name or "conv" in file_name) and dataset == "mnist":
         mean = 0.1307000070810318
         sigma = 0.30810001492500305
-    if dataset == "cifar": 
+    if dataset == "cifar":
         mean = [0.49140000343322754, 0.482200026512146, 0.4465000033378601]
         sigma = [0.20230001211166382, 0.19940000772476196, 0.20100000500679016]
-    
+
     nonlinearity_after_conv = "relu"
     isLastLayerReLU = False
-    
+
     # input_size = get_input_size_from_file(file_name)
     input_size = get_input_size_from_dataset(dataset)
     for id, layer in enumerate(layers):
         if layer["type"] == "Linear":
             fc_layers.append(layer["parameters"][1])
+        elif layer["type"] == "Conv2d":
+            conv_layers.append(layer["parameters"])
         elif layer["type"] == "ReLU":
-            if id == len(layers) - 1: isLastLayerReLU = True
-    
+            if id == len(layers) - 1:
+                isLastLayerReLU = True
+
     for key in state_dict_load.keys():
         if ".weight" in key:
             weights.append(state_dict_load[key])
         elif ".bias" in key:
             biases.append(state_dict_load[key])
-    
-    net = Network(DEVICE, input_size, conv_layers, fc_layers, 10,
-                  use_normalization, nonlinearity_after_conv, isLastLayerReLU=isLastLayerReLU, mean=mean, sigma=sigma)
+
+    net = Network(
+        DEVICE,
+        input_size,
+        conv_layers,
+        fc_layers,
+        10,
+        use_normalization,
+        nonlinearity_after_conv,
+        isLastLayerReLU=isLastLayerReLU,
+        mean=mean,
+        sigma=sigma,
+    )
     for layer in net.layers:
         if isinstance(layer, (torch.nn.Linear, torch.nn.Conv2d)):
-
             layer.weight = torch.nn.Parameter(weights.pop(0), False)
             layer.bias = torch.nn.Parameter(biases.pop(0), False)
     net.update_bias_free_layers()
-    
+
     return net
 
-def load_net_from_eran_examples(file_name, dataset):
 
+def load_net_from_eran_examples(file_name, dataset):
     conv_layers = []
     fc_layers = []
     weights = []
@@ -240,16 +293,16 @@ def load_net_from_eran_examples(file_name, dataset):
     # input_size = get_input_size_from_file(file_name)
     input_size = get_input_size_from_dataset(dataset)
 
-    lines = open(file_name, 'r')
+    lines = open(file_name, "r")
     while True:
         curr_line = lines.readline()[:-1]
-        if 'Normalize' in curr_line:
+        if "Normalize" in curr_line:
             use_normalization = True
 
             mean = extract_mean(curr_line)
             sigma = extract_std(curr_line)
 
-        elif curr_line in ['ReLU', 'Affine']:
+        elif curr_line in ["ReLU", "Affine"]:
             W = parseVec(lines)
             b = parseVec(lines)
 
@@ -257,24 +310,27 @@ def load_net_from_eran_examples(file_name, dataset):
             biases.append(b)
             fc_layers.append(b.numel())
 
-        elif curr_line == 'Conv2D':
+        elif curr_line == "Conv2D":
             line = lines.readline()
 
             start = 0
-            if('ReLU' in line):
+            if "ReLU" in line:
                 start = 5
-            elif('Sigmoid' in line):
+            elif "Sigmoid" in line:
                 start = 8
-            elif('Tanh' in line):
+            elif "Tanh" in line:
                 start = 5
-            elif('Affine' in line):
+            elif "Affine" in line:
                 start = 7
-            if 'padding' in line:
+            if "padding" in line:
                 args = runRepl(
-                    line[start:-1], ['filters', 'input_shape', 'kernel_size', 'stride', 'padding'])
+                    line[start:-1],
+                    ["filters", "input_shape", "kernel_size", "stride", "padding"],
+                )
             else:
                 args = runRepl(
-                    line[start:-1], ['filters', 'input_shape', 'kernel_size'])
+                    line[start:-1], ["filters", "input_shape", "kernel_size"]
+                )
 
             W = parseVec(lines).permute(3, 2, 0, 1)
             b = parseVec(lines)
@@ -283,15 +339,29 @@ def load_net_from_eran_examples(file_name, dataset):
             biases.append(b)
 
             conv_layers.append(
-                (args['filters'], args['kernel_size'][0], args['stride'][0], args['padding']))
+                (
+                    args["filters"],
+                    args["kernel_size"][0],
+                    args["stride"][0],
+                    args["padding"],
+                )
+            )
 
-        elif curr_line == '':
+        elif curr_line == "":
             break
         else:
-            raise Exception('Unsupported Operation: ')
+            raise Exception("Unsupported Operation: ")
             pass
-    net = Network(DEVICE, input_size, conv_layers, fc_layers,
-                  10, use_normalization, mean=mean, sigma=sigma)
+    net = Network(
+        DEVICE,
+        input_size,
+        conv_layers,
+        fc_layers,
+        10,
+        use_normalization,
+        mean=mean,
+        sigma=sigma,
+    )
 
     for layer in net.layers:
         if isinstance(layer, (torch.nn.Linear, torch.nn.Conv2d)):
@@ -303,8 +373,7 @@ def load_net_from_eran_examples(file_name, dataset):
 
 
 def load_net_from_bridging_the_gap(file_name):
-    state_dict_load = torch.load(file_name,
-                                 map_location=torch.device(DEVICE))
+    state_dict_load = torch.load(file_name, map_location=torch.device(DEVICE))
 
     keys = list(state_dict_load.keys())
     conv_layers = []
@@ -315,8 +384,8 @@ def load_net_from_bridging_the_gap(file_name):
     input_size = get_input_size_from_file(file_name)
 
     for key in keys:
-        if 'conv.weight' in key:
-            layer_idx = int(key.split('.')[2])
+        if "conv.weight" in key:
+            layer_idx = int(key.split(".")[2])
             shape = state_dict_load[key].shape
 
             filters = shape[0]
@@ -339,20 +408,18 @@ def load_net_from_bridging_the_gap(file_name):
             conv_layers.append((filters, kernel_size, stride, padding))
             weights.append(state_dict_load[key])
 
-        elif 'linear.weight' in key:
+        elif "linear.weight" in key:
             shape = state_dict_load[key].shape
             fc_layers.append(shape[0])
             weights.append(state_dict_load[key])
 
-        elif 'bias' in key:
+        elif "bias" in key:
             biases.append(state_dict_load[key])
 
-    net = Network(DEVICE, input_size, conv_layers, fc_layers,
-                  10)
+    net = Network(DEVICE, input_size, conv_layers, fc_layers, 10)
 
     for layer in net.layers:
         if isinstance(layer, (torch.nn.Linear, torch.nn.Conv2d)):
-
             layer.weight = torch.nn.Parameter(weights.pop(0), False)
             layer.bias = torch.nn.Parameter(biases.pop(0), False)
     net.update_bias_free_layers()
@@ -360,29 +427,34 @@ def load_net_from_bridging_the_gap(file_name):
 
 
 def load_net_from_acasxu(file_name):
-
     use_normalization = True
 
     matfile = loadmat(file_name)
 
-    weights = list(matfile['W'][0])
-    biases = list(matfile['b'][0])
+    weights = list(matfile["W"][0])
+    biases = list(matfile["b"][0])
 
-    fc_layers = matfile['layer_sizes'][0][1:]
-    input_size = (1, matfile['layer_sizes'][0][0])
+    fc_layers = matfile["layer_sizes"][0][1:]
+    input_size = (1, matfile["layer_sizes"][0][0])
 
-    mean = matfile['means_for_scaling'][0][:5]
-    sigma = matfile['range_for_scaling'][0][:5]
+    mean = matfile["means_for_scaling"][0][:5]
+    sigma = matfile["range_for_scaling"][0][:5]
 
-    net = Network(DEVICE, input_size, [], fc_layers,
-                  fc_layers[-1], use_normalization, mean=mean, sigma=sigma)
+    net = Network(
+        DEVICE,
+        input_size,
+        [],
+        fc_layers,
+        fc_layers[-1],
+        use_normalization,
+        mean=mean,
+        sigma=sigma,
+    )
 
     for layer in net.layers:
         if isinstance(layer, (torch.nn.Linear, torch.nn.Conv2d)):
-            layer.weight = torch.nn.Parameter(
-                torch.Tensor(weights.pop(0)), False)
-            layer.bias = torch.nn.Parameter(
-                torch.Tensor(biases.pop(0).T), False)
+            layer.weight = torch.nn.Parameter(torch.Tensor(weights.pop(0)), False)
+            layer.bias = torch.nn.Parameter(torch.Tensor(biases.pop(0).T), False)
     net.update_bias_free_layers()
     # mean = torch.Tensor(mean).view(1, 1, 1, 5)
     # print(net(mean))
@@ -393,8 +465,8 @@ def load_net_from_acasxu(file_name):
 def load_net_from_patch_attacks(file_name, dataset):
     load_dict = torch.load(file_name, map_location=torch.device(DEVICE))
     print(f"keys : {load_dict.keys()}")
-    state_dict_load = load_dict['state_dict']
-    layers = load_dict['model_layers']
+    state_dict_load = load_dict["state_dict"]
+    layers = load_dict["model_layers"]
 
     conv_layers = []
     fc_layers = []
@@ -404,18 +476,18 @@ def load_net_from_patch_attacks(file_name, dataset):
     mean = 0.1307
     sigma = 0.3081
     # mean = 0
-    # sigma = 1 
-    nonlinearity_after_conv = 'relu'
+    # sigma = 1
+    nonlinearity_after_conv = "relu"
     isLastLayerReLU = False
 
     # input_size = get_input_size_from_file(file_name)
     input_size = get_input_size_from_dataset(dataset)
     for id, layer in enumerate(layers):
-        if layer['type'] == 'Linear':
-            fc_layers.append(layer['parameters'][1])
+        if layer["type"] == "Linear":
+            fc_layers.append(layer["parameters"][1])
 
-        elif layer['type'] == 'Conv':
-            params = layer['parameters'][1:]
+        elif layer["type"] == "Conv":
+            params = layer["parameters"][1:]
             param_list = []
             for param in params:
                 if isinstance(param, tuple):
@@ -423,38 +495,70 @@ def load_net_from_patch_attacks(file_name, dataset):
                 param_list.append(param)
 
             conv_layers.append(tuple(param_list))
-        elif layer['type'] == 'Normalization':
+        elif layer["type"] == "Normalization":
             use_normalization = True
-            mean = layer['weights'][0]
-            sigma = layer['weights'][1]
-        elif layer['type'] == 'ReLU':
-            if id == len(layers) - 1: isLastLayerReLU = True
-        elif layer['type'] == 'MaxPool':
-            nonlinearity_after_conv = 'max'
+            mean = layer["weights"][0]
+            sigma = layer["weights"][1]
+        elif layer["type"] == "ReLU":
+            if id == len(layers) - 1:
+                isLastLayerReLU = True
+        elif layer["type"] == "MaxPool":
+            nonlinearity_after_conv = "max"
             print(conv_layers[-1], (layer.kernel_size,))
             conv_layers[-1] = conv_layers[-1] + (layer.kernel_size,)
-        elif layer['type'] == 'AvgPool':
-            nonlinearity_after_conv = 'average'
+        elif layer["type"] == "AvgPool":
+            nonlinearity_after_conv = "average"
             conv_layers[-1] = conv_layers[-1] + (layer.kernel_size,)
-        elif layer['type'] == 'Flatten':
+        elif layer["type"] == "Flatten":
             pass
         else:
-            print('Unknown layer:', layer)
+            print("Unknown layer:", layer)
 
     for key in state_dict_load.keys():
-        if '.weight' in key:
+        if ".weight" in key:
             weights.append(state_dict_load[key])
-        elif '.bias' in key:
+        elif ".bias" in key:
             biases.append(state_dict_load[key])
         else:
-            print('Unknown layer type: {}'.format(key))
+            print("Unknown layer type: {}".format(key))
 
     if "Toy" in file_name:
-        net = Network(DEVICE, input_size, conv_layers, fc_layers, 1, use_normalization, nonlinearity_after_conv, mean=mean, sigma=sigma)
+        net = Network(
+            DEVICE,
+            input_size,
+            conv_layers,
+            fc_layers,
+            1,
+            use_normalization,
+            nonlinearity_after_conv,
+            mean=mean,
+            sigma=sigma,
+        )
     elif "Ex" in file_name:
-        net = Network(DEVICE, input_size, conv_layers, fc_layers, 2, use_normalization, nonlinearity_after_conv, mean=mean, sigma=sigma)
+        net = Network(
+            DEVICE,
+            input_size,
+            conv_layers,
+            fc_layers,
+            2,
+            use_normalization,
+            nonlinearity_after_conv,
+            mean=mean,
+            sigma=sigma,
+        )
     else:
-        net = Network(DEVICE, input_size, conv_layers, fc_layers, 10, use_normalization, nonlinearity_after_conv, isLastLayerReLU=isLastLayerReLU, mean=mean, sigma=sigma)
+        net = Network(
+            DEVICE,
+            input_size,
+            conv_layers,
+            fc_layers,
+            10,
+            use_normalization,
+            nonlinearity_after_conv,
+            isLastLayerReLU=isLastLayerReLU,
+            mean=mean,
+            sigma=sigma,
+        )
 
     for layer in net.layers:
         if isinstance(layer, (torch.nn.Linear, torch.nn.Conv2d)):
@@ -464,23 +568,24 @@ def load_net_from_patch_attacks(file_name, dataset):
     net.update_bias_free_layers()
     return net
 
+
 def get_input_size_from_dataset(dataset):
     if dataset == "mnist":
         input_size = (1, 28, 28)
     elif dataset == "cifar":
         input_size = (3, 32, 32)
-    
+
     return input_size
 
 
 def get_input_size_from_file(file_name):
-    if 'mnist' in file_name:
+    if "mnist" in file_name:
         input_size = (1, 28, 28)
-    elif 'cifar' in file_name:
+    elif "cifar" in file_name:
         input_size = (3, 32, 32)
-    elif 'onnx' in file_name:
+    elif "onnx" in file_name:
         input_size = (1, 28, 28)
-    else: # toy, caterian, deeppoly
+    else:  # toy, caterian, deeppoly
         input_size = (1, 1, 2)
     # else:
     #     print('Unknown Dataset for file {}'.format(file_name))
@@ -511,75 +616,85 @@ def get_acaxsu_property(property_number):
 
     elif property_number == 2:
         # COC is not maximal
-        property_conditions = ['OR',
-                               ([1, -1, 0, 0, 0], 0),
-                               ([1, 0, -1, 0, 0], 0),
-                               ([1, 0, 0, -1, 0], 0),
-                               ([1, 0, 0, 0, -1], 0)]
+        property_conditions = [
+            "OR",
+            ([1, -1, 0, 0, 0], 0),
+            ([1, 0, -1, 0, 0], 0),
+            ([1, 0, 0, -1, 0], 0),
+            ([1, 0, 0, 0, -1], 0),
+        ]
 
     elif property_number in [3, 4]:
         # COC is not minimal
-        property_conditions = ['OR',
-                               ([-1, 1, 0, 0, 0], 0),
-                               ([-1, 0, 1, 0, 0], 0),
-                               ([-1, 0, 0, 1, 0], 0),
-                               ([-1, 0, 0, 0, 1], 0)]
+        property_conditions = [
+            "OR",
+            ([-1, 1, 0, 0, 0], 0),
+            ([-1, 0, 1, 0, 0], 0),
+            ([-1, 0, 0, 1, 0], 0),
+            ([-1, 0, 0, 0, 1], 0),
+        ]
         if property_number == 4:
             lower_bound_input = torch.Tensor([1500, -0.06, 0, 1000, 700])
-            upper_bound_input = torch.Tensor(
-                [1800, 0.06, 0, 1200, 800])
+            upper_bound_input = torch.Tensor([1800, 0.06, 0, 1200, 800])
 
     elif property_number == 5:
         # strong right is minimal
-        property_conditions = ['AND',
-                               ([1, 0, 0, 0, -1], 0),
-                               ([0, 1, 0, 0, -1], 0),
-                               ([0, 0, 1, 0, -1], 0),
-                               ([0, 0, 0, 1, -1], 0)]
+        property_conditions = [
+            "AND",
+            ([1, 0, 0, 0, -1], 0),
+            ([0, 1, 0, 0, -1], 0),
+            ([0, 0, 1, 0, -1], 0),
+            ([0, 0, 0, 1, -1], 0),
+        ]
 
     elif property_number in [6, 10]:
         # COC is minimal
-        property_conditions = ['AND',
-                               ([-1, 1, 0, 0, 0], 0),
-                               ([-1, 0, 1, 0, 0], 0),
-                               ([-1, 0, 0, 1, 0], 0),
-                               ([-1, 0, 0, 0, 1], 0)]
+        property_conditions = [
+            "AND",
+            ([-1, 1, 0, 0, 0], 0),
+            ([-1, 0, 1, 0, 0], 0),
+            ([-1, 0, 0, 1, 0], 0),
+            ([-1, 0, 0, 0, 1], 0),
+        ]
 
     elif property_number == 7:
         # neither strong left nor strong right are the minimal score
-        property_conditions = ['AND',
-                               ['OR',
-                                ([-1, 0, 0, 1, 0], 0),
-                                   ([0, -1, 0, 1, 0], 0),
-                                   ([0, 0, -1, 1, 0], 0)],
-                               ['OR',
-                                   ([-1, 0, 0, 0, 1], 0),
-                                   ([0, -1, 0, 0, 1], 0),
-                                   ([0, 0, -1, 0, 1], 0)]]
+        property_conditions = [
+            "AND",
+            ["OR", ([-1, 0, 0, 1, 0], 0), ([0, -1, 0, 1, 0], 0), ([0, 0, -1, 1, 0], 0)],
+            ["OR", ([-1, 0, 0, 0, 1], 0), ([0, -1, 0, 0, 1], 0), ([0, 0, -1, 0, 1], 0)],
+        ]
 
     elif property_number == 8:
         # COC is minimal or weak left is minimal
-        property_conditions = ['OR',
-                               ['AND',
-                                ([-1, 0, 1, 0, 0], 0),
-                                   ([-1, 0, 0, 1, 0], 0),
-                                   ([-1, 0, 0, 0, 1], 0)],
-                               ['AND',
-                                   ([0, -1, 1, 0, 0], 0),
-                                   ([0, -1, 0, 1, 0], 0),
-                                   ([0, -1, 0, 0, 1], 0)]]
+        property_conditions = [
+            "OR",
+            [
+                "AND",
+                ([-1, 0, 1, 0, 0], 0),
+                ([-1, 0, 0, 1, 0], 0),
+                ([-1, 0, 0, 0, 1], 0),
+            ],
+            [
+                "AND",
+                ([0, -1, 1, 0, 0], 0),
+                ([0, -1, 0, 1, 0], 0),
+                ([0, -1, 0, 0, 1], 0),
+            ],
+        ]
 
     elif property_number == 9:
         # strong left is minimal
-        property_conditions = ['AND',
-                               ([1, 0, 0, -1, 0], 0),
-                               ([0, 1, 0, -1, 0], 0),
-                               ([0, 0, 1, -1, 0], 0),
-                               ([0, 0, 0, -1, 1], 0)]
+        property_conditions = [
+            "AND",
+            ([1, 0, 0, -1, 0], 0),
+            ([0, 1, 0, -1, 0], 0),
+            ([0, 0, 1, -1, 0], 0),
+            ([0, 0, 0, -1, 1], 0),
+        ]
 
         lower_bound_input = torch.Tensor([2000, -0.4, -3.141592, 100, 0])
-        upper_bound_input = torch.Tensor(
-            [7000, -0.14, -3.141592 + 0.01, 150, 150])
+        upper_bound_input = torch.Tensor([7000, -0.14, -3.141592 + 0.01, 150, 150])
 
     lower_bound_input = lower_bound_input.view([1, 1, 1, 5])
     upper_bound_input = upper_bound_input.view([1, 1, 1, 5])
@@ -595,21 +710,18 @@ def acasxu_initialize_zonotope(property_number, requires_grad=False):
     # a0 = ((lower_bound + upper_bound) / 2).view(1, 1, 1, 5)
     # A = torch.diag((upper_bound - lower_bound)/2).view(5, 1, 1, 5)
     a0 = (lower_bound + upper_bound) / 2
-    A = torch.diag((
-        (upper_bound - lower_bound)/2).view(-1)).view(5, 1, 1, 5)
+    A = torch.diag(((upper_bound - lower_bound) / 2).view(-1)).view(5, 1, 1, 5)
     z = Zonotope(a0, A)
 
     return z
 
 
 def acasxu_forward_pass(net, lower_bound, upper_bound):
-
     # a0 = ((lower_bound + upper_bound) / 2).view(1, 1, 1, 5)
     # A = torch.diag((upper_bound - lower_bound)/2).view(5, 1, 1, 5)
 
     a0 = (lower_bound + upper_bound) / 2
-    A = torch.diag((
-        (upper_bound - lower_bound)/2).view(-1)).view(5, 1, 1, 5)
+    A = torch.diag(((upper_bound - lower_bound) / 2).view(-1)).view(5, 1, 1, 5)
 
     z = Zonotope(a0, A)
 
@@ -642,7 +754,7 @@ def check_acasxu_property(z, property_number):
 
         y = z.a0 - A_diff_abs
 
-        isVerified = (torch.argmin(y) == true_label)
+        isVerified = torch.argmin(y) == true_label
 
         return isVerified, y
     else:
@@ -650,8 +762,7 @@ def check_acasxu_property(z, property_number):
 
 
 def acasxu_get_splits(upper_bound, lower_bound):
-    gradients = torch.max(lower_bound.grad.abs(),
-                          upper_bound.grad.abs()).view(-1)
+    gradients = torch.max(lower_bound.grad.abs(), upper_bound.grad.abs()).view(-1)
 
     num_dimensions = gradients.numel()
     lower_bound = lower_bound.requires_grad_(False).detach().view(-1)
@@ -669,8 +780,10 @@ def acasxu_get_splits(upper_bound, lower_bound):
 
     split_multiple = 20 / smears.sum()
     num_splits = [int(torch.ceil(smear * split_multiple)) for smear in smears]
-    cuts = [torch.linspace(lower_bound[i], upper_bound[i], num_splits[i] + 1).tolist()
-            for i in range(num_dimensions)]
+    cuts = [
+        torch.linspace(lower_bound[i], upper_bound[i], num_splits[i] + 1).tolist()
+        for i in range(num_dimensions)
+    ]
     # step_size = [gap[i] / num_splits[i] for i in range(5)]
     # print(gradients, smears, num_splits)
 
@@ -678,14 +791,12 @@ def acasxu_get_splits(upper_bound, lower_bound):
     splits = []
 
     for split_numbers in itertools.product(*split_enumeration):
+        lower_bound_list = [cuts[i][split_numbers[i]] for i in range(num_dimensions)]
+        upper_bound_list = [
+            cuts[i][split_numbers[i] + 1] for i in range(num_dimensions)
+        ]
 
-        lower_bound_list = [cuts[i][split_numbers[i]]
-                            for i in range(num_dimensions)]
-        upper_bound_list = [cuts[i][split_numbers[i] + 1]
-                            for i in range(num_dimensions)]
-
-        splits.append((torch.Tensor(lower_bound_list),
-                       torch.Tensor(upper_bound_list)))
+        splits.append((torch.Tensor(lower_bound_list), torch.Tensor(upper_bound_list)))
 
         # lower_bound = torch.Tensor([cuts[0][split_numbers[0]],
         #                             cuts[1][split_numbers[1]],
@@ -731,8 +842,7 @@ def acasxu_sort_splits(splits, dimension=0):
 def acasxu_split(lower_bound, upper_bound, y, property_number):
     acasxu_compute_gradients(y, property_number)
 
-    gradients = torch.max(lower_bound.grad.abs(),
-                          upper_bound.grad.abs()) + 1E-10
+    gradients = torch.max(lower_bound.grad.abs(), upper_bound.grad.abs()) + 1e-10
 
     lower_bound.requires_grad_(False).detach_()
     upper_bound.requires_grad_(False).detach_()
@@ -771,21 +881,19 @@ def get_activation_signs(model, selected_labels, num_elements, test_set, eps):
         real_selected_labels = selected_labels
 
     for label in real_selected_labels:
-
         dataset = load_dataset_selected_labels_only(
-            'mnist', [label], num_elements // len(real_selected_labels), test_set)
-        data_loader = torch.utils.data.DataLoader(dataset, batch_size=1,
-                                                  shuffle=False, num_workers=1)
+            "mnist", [label], num_elements // len(real_selected_labels), test_set
+        )
+        data_loader = torch.utils.data.DataLoader(
+            dataset, batch_size=1, shuffle=False, num_workers=1
+        )
 
         for idx_sample, (inputs, labels) in enumerate(tqdm(data_loader)):
-
             relaxation = Zonotope_Net(model.net)
             relaxation.process_input_once(inputs, eps, labels)
 
             for idx_layer in selected_layers:
-
-                signs, bins = get_activation_signs_at_layer(
-                    relaxation, idx_layer)
+                signs, bins = get_activation_signs_at_layer(relaxation, idx_layer)
 
                 activation_signs[idx_layer].append(signs)
                 activation_sign_bins[idx_layer].append(bins)
@@ -801,7 +909,7 @@ def get_activation_signs_at_layer(relaxation, idx_layer):
     negative_activations = (upper_bound <= 0).int()
     positive_activations = (lower_bound > 0).int()
 
-    activation_summary = - negative_activations + positive_activations
+    activation_summary = -negative_activations + positive_activations
 
     num_positive = positive_activations.sum().item()
     num_negative = negative_activations.sum().item()
@@ -813,7 +921,6 @@ def get_activation_signs_at_layer(relaxation, idx_layer):
 
 
 def acasxu_get_activation_signs(net, property_number, depth):
-
     selected_layers = []
     activation_signs = {}
     activation_sign_bins = {}
@@ -833,21 +940,21 @@ def acasxu_get_activation_signs(net, property_number, depth):
     z_net = acasxu_forward_pass(net, lower_bound_input, upper_bound_input)
 
     _, y_worst_case = check_acasxu_property(
-        z_net.relaxation_at_layers[-1], property_number)
+        z_net.relaxation_at_layers[-1], property_number
+    )
 
     acasxu_compute_gradients(y_worst_case, property_number)
 
     splits = acasxu_get_splits(upper_bound_input, lower_bound_input)
 
     for lower_bound, upper_bound in splits:
-
         relaxation_nets = acasxu_split_recursive(
-            lower_bound, upper_bound, net, property_number, 0, depth)
+            lower_bound, upper_bound, net, property_number, 0, depth
+        )
 
         for z_net in relaxation_nets:
             for idx_layer in selected_layers:
-                signs, bins = get_activation_signs_at_layer(
-                    z_net, idx_layer)
+                signs, bins = get_activation_signs_at_layer(z_net, idx_layer)
 
                 activation_signs[idx_layer].append(signs)
                 activation_sign_bins[idx_layer].append(bins)
@@ -855,9 +962,10 @@ def acasxu_get_activation_signs(net, property_number, depth):
     return activation_signs, activation_sign_bins, selected_layers
 
 
-def acasxu_split_recursive(lower_bound, upper_bound, net, property_number, current_depth, depth):
-
-    last_iteration = (current_depth == depth)
+def acasxu_split_recursive(
+    lower_bound, upper_bound, net, property_number, current_depth, depth
+):
+    last_iteration = current_depth == depth
 
     lower_bound.requires_grad_(not last_iteration)
     upper_bound.requires_grad_(not last_iteration)
@@ -869,15 +977,29 @@ def acasxu_split_recursive(lower_bound, upper_bound, net, property_number, curre
 
     else:
         _, y_worst_case = check_acasxu_property(
-            z_net.relaxation_at_layers[-1], property_number)
+            z_net.relaxation_at_layers[-1], property_number
+        )
 
-        bounds_new1, bounds_new2 = acasxu_split(lower_bound, upper_bound,
-                                                y_worst_case, property_number)
+        bounds_new1, bounds_new2 = acasxu_split(
+            lower_bound, upper_bound, y_worst_case, property_number
+        )
 
         relaxations1 = acasxu_split_recursive(
-            bounds_new1[0], bounds_new1[1], net, property_number, current_depth+1, depth)
+            bounds_new1[0],
+            bounds_new1[1],
+            net,
+            property_number,
+            current_depth + 1,
+            depth,
+        )
         relaxations2 = acasxu_split_recursive(
-            bounds_new2[0], bounds_new2[1], net, property_number, current_depth+1, depth)
+            bounds_new2[0],
+            bounds_new2[1],
+            net,
+            property_number,
+            current_depth + 1,
+            depth,
+        )
 
         relaxations1.extend(relaxations2)
 
@@ -885,12 +1007,10 @@ def acasxu_split_recursive(lower_bound, upper_bound, net, property_number, curre
 
 
 def load_selected_labels_only(dataset, labels=None, num_elements=None, start_element=0):
-
     if not isinstance(dataset.targets, torch.Tensor):
         dataset.targets = torch.Tensor(dataset.targets).long()
 
     if labels is not None:
-
         if isinstance(labels, int):
             labels = [labels]
 
@@ -902,28 +1022,38 @@ def load_selected_labels_only(dataset, labels=None, num_elements=None, start_ele
         dataset.targets = dataset.targets[idx]
 
     if num_elements is not None:
-        dataset.data = dataset.data[start_element:num_elements +
-                                    start_element, :, :]
-        dataset.targets = dataset.targets[start_element: num_elements +
-                                          start_element]
+        dataset.data = dataset.data[start_element : num_elements + start_element, :, :]
+        dataset.targets = dataset.targets[start_element : num_elements + start_element]
 
     return dataset
 
 
-def load_dataset_selected_labels_only(dataset_name, labels=None, num_elements=None, test_set=True,
-                                      start_element=0):
-
-    if dataset_name == 'mnist':
-        dataset = datasets.MNIST(PATH_EXAMPLES, train=not test_set, download=DOWNLOAD_DATA,
-                                 transform=transforms.Compose([transforms.ToTensor()]))
-    elif dataset_name == 'cifar':
-        dataset = datasets.CIFAR10(PATH_EXAMPLES, train=not test_set, download=DOWNLOAD_DATA,
-                                   transform=transforms.Compose([transforms.ToTensor()]))
-    elif dataset_name == 'fashionmnist':
-        dataset = datasets.FashionMNIST(PATH_EXAMPLES, train=not test_set, download=DOWNLOAD_DATA,
-                                        transform=transforms.Compose([transforms.ToTensor()]))
+def load_dataset_selected_labels_only(
+    dataset_name, labels=None, num_elements=None, test_set=True, start_element=0
+):
+    if dataset_name == "mnist":
+        dataset = datasets.MNIST(
+            PATH_EXAMPLES,
+            train=not test_set,
+            download=DOWNLOAD_DATA,
+            transform=transforms.Compose([transforms.ToTensor()]),
+        )
+    elif dataset_name == "cifar":
+        dataset = datasets.CIFAR10(
+            PATH_EXAMPLES,
+            train=not test_set,
+            download=DOWNLOAD_DATA,
+            transform=transforms.Compose([transforms.ToTensor()]),
+        )
+    elif dataset_name == "fashionmnist":
+        dataset = datasets.FashionMNIST(
+            PATH_EXAMPLES,
+            train=not test_set,
+            download=DOWNLOAD_DATA,
+            transform=transforms.Compose([transforms.ToTensor()]),
+        )
     else:
-        print('Unknown dataset:', dataset_name)
+        print("Unknown dataset:", dataset_name)
         raise RuntimeError
 
     return load_selected_labels_only(dataset, labels, num_elements, start_element)
@@ -933,7 +1063,7 @@ def load_deepg_specs(idx, folder):
     # specs_file = '{}deepg/{}/{}.csv'.format(PATH_EXAMPLES, folder, idx)
     specs_file = f"../../data/vnn/deepg/{folder}/{idx}.csv"
 
-    with open(specs_file, 'r') as fin:
+    with open(specs_file, "r") as fin:
         lines = fin.readlines()
 
         lower_bounds_list = []
@@ -944,15 +1074,14 @@ def load_deepg_specs(idx, folder):
         idx_interval = 0
         num_params = 1
         for idx_line_overall, line in enumerate(lines):
-
             if idx_line_overall == 0:
                 # Read unperturbed input image
-                values = torch.Tensor(list(map(float, line[:-1].split(','))))
+                values = torch.Tensor(list(map(float, line[:-1].split(","))))
                 input = values[::2]
                 continue
             elif idx_line_overall == 1:
                 # Read image shape
-                values = tuple(map(int, line[:-1].split(' ')))
+                values = tuple(map(int, line[:-1].split(" ")))
                 num_channels, num_rows, num_columns = values
                 continue
             elif idx_line_overall == 2:
@@ -965,17 +1094,17 @@ def load_deepg_specs(idx, folder):
 
             if idx_line_of_spec < num_params:
                 # read specs for the parameters
-                values = torch.Tensor(list(map(float, line[:-1].split(' '))))
+                values = torch.Tensor(list(map(float, line[:-1].split(" "))))
                 assert values.shape[0] == 2
                 interval_specs_list.append(values)
 
             elif idx_line_of_spec == num_params:
                 # read interval bounds for image pixels
-                values = torch.Tensor(list(map(float, line[:-1].split(','))))
+                values = torch.Tensor(list(map(float, line[:-1].split(","))))
                 lower_bounds_list.append(values[::2])
                 upper_bounds_list.append(values[1::2])
 
-            elif line == 'SPEC_FINISHED\n':
+            elif line == "SPEC_FINISHED\n":
                 idx_line_of_spec = -1
                 idx_interval += 1
             else:
@@ -984,31 +1113,30 @@ def load_deepg_specs(idx, folder):
 
     lower_bounds = torch.stack(lower_bounds_list, 0)
     upper_bounds = torch.stack(upper_bounds_list, 0)
-    interval_specs = torch.stack(
-        interval_specs_list, 0).view(-1, num_params, 2)
+    interval_specs = torch.stack(interval_specs_list, 0).view(-1, num_params, 2)
 
-    lower_bounds = lower_bounds.view(
-        [-1, num_rows, num_columns, num_channels]).permute(0, 3, 1, 2)
-    upper_bounds = upper_bounds.view(
-        [-1, num_rows, num_columns, num_channels]).permute(0, 3, 1, 2)
-    input = input.view(
-        [1, num_rows, num_columns, num_channels]).permute(0, 3, 1, 2)
+    lower_bounds = lower_bounds.view([-1, num_rows, num_columns, num_channels]).permute(
+        0, 3, 1, 2
+    )
+    upper_bounds = upper_bounds.view([-1, num_rows, num_columns, num_channels]).permute(
+        0, 3, 1, 2
+    )
+    input = input.view([1, num_rows, num_columns, num_channels]).permute(0, 3, 1, 2)
 
     return input, lower_bounds, upper_bounds, interval_specs
 
 
 def deepg_get_input_and_label(lower_bounds, upper_bounds, specs, net):
-
     lower_bound_min_index = specs[:, 0].abs().argmin()
-    input = (lower_bounds[lower_bound_min_index] +
-             upper_bounds[lower_bound_min_index]) * 0.5
+    input = (
+        lower_bounds[lower_bound_min_index] + upper_bounds[lower_bound_min_index]
+    ) * 0.5
 
     label = net(input)[0].argmax().item()
     return input, label
 
 
 def print_layers_and_sizes(net):
-
     # x = torch.empty((1, 1, 28, 28))
     try:
         input_size = list(net.input_size)
@@ -1018,17 +1146,17 @@ def print_layers_and_sizes(net):
 
     x = torch.empty(input_size)
 
-    print('Network:')
-    print('  Input:', list(x.shape))
+    print("Network:")
+    print("  Input:", list(x.shape))
     for idx_layer, layer in enumerate(net.layers):
         x = layer(x)
-        print('  ({}):'.format(idx_layer), layer,
-              '\n                -->', list(x.shape))
+        print(
+            "  ({}):".format(idx_layer), layer, "\n                -->", list(x.shape)
+        )
     print()
 
 
 class IntermediateDataset(torch.utils.data.Dataset):
-
     def __init__(self, path, num_items=None, labels=None):
         self.path = path
         self.labels = labels if labels is not None else list(range(10))
@@ -1039,13 +1167,12 @@ class IntermediateDataset(torch.utils.data.Dataset):
             self.num_items = min(num_items, self.num_items)
 
     def count_items(self):
-        folder, prefix = tuple(self.path.rsplit('/', 1))
+        folder, prefix = tuple(self.path.rsplit("/", 1))
         self.items_count = {}
 
         for label in self.labels:
-            prefix_ext = '{}_{}_'.format(prefix, label)
-            num_items = len(
-                [name for name in os.listdir(folder) if prefix_ext in name])
+            prefix_ext = "{}_{}_".format(prefix, label)
+            num_items = len([name for name in os.listdir(folder) if prefix_ext in name])
             self.items_count[label] = num_items
 
         self.total_items = sum(self.items_count.values())
@@ -1065,21 +1192,25 @@ class IntermediateDataset(torch.utils.data.Dataset):
                 index = index - num_items
 
         if label is None:
-            print('Issue with loading dataset, Num_items: {}, idx_item: {}'.format(
-                self.items_count, index_orig))
+            print(
+                "Issue with loading dataset, Num_items: {}, idx_item: {}".format(
+                    self.items_count, index_orig
+                )
+            )
             raise EnvironmentError
 
         index = str(index).zfill(5)
-        data = pickle.load(
-            open('{}_{}_{}.pkl'.format(self.path, label, index), 'rb'))
+        data = pickle.load(open("{}_{}_{}.pkl".format(self.path, label, index), "rb"))
 
-        label = data['label']
-        isVerified = data['isVerified']
-        isPredicted = data['isPredicted']
-        relaxations = data['intermediate_relaxations']
+        label = data["label"]
+        isVerified = data["isVerified"]
+        isPredicted = data["isPredicted"]
+        relaxations = data["intermediate_relaxations"]
 
-        relaxations = {x: Zonotope(relaxations[x][[0]], relaxations[x][1:])
-                       for x in relaxations.keys()}
+        relaxations = {
+            x: Zonotope(relaxations[x][[0]], relaxations[x][1:])
+            for x in relaxations.keys()
+        }
 
         return relaxations, label, isPredicted, isVerified
 
@@ -1091,7 +1222,6 @@ def custom_collate(batch):
 
 
 class TimeLogger:
-
     def __init__(self):
         self.timers = {}
 
@@ -1101,16 +1231,16 @@ class TimeLogger:
 
         for name in names:
             if name in self.timers.keys():
-                print('Timer {} already exists'.format(name))
+                print("Timer {} already exists".format(name))
             else:
                 self.timers[name] = Timer()
 
     def start_timer(self, name):
-        assert(name in self.timers.keys())
+        assert name in self.timers.keys()
         self.timers[name].start()
 
     def stop_timer(self, name):
-        assert(name in self.timers.keys())
+        assert name in self.timers.keys()
         self.timers[name].stop()
 
     def print_summary(self, names=None):
@@ -1119,18 +1249,19 @@ class TimeLogger:
 
         print_strs = []
         longest_name_length = len(max(names, key=len))
-        longest_name_length = int(1.5*longest_name_length)
+        longest_name_length = int(1.5 * longest_name_length)
 
         for name in names:
             timer = self.timers[name]
-            print_str = 'Timer {}:'.format(name).ljust(longest_name_length)
-            print_str += 'Counts: {},'.format(timer.count).ljust(15)
+            print_str = "Timer {}:".format(name).ljust(longest_name_length)
+            print_str += "Counts: {},".format(timer.count).ljust(15)
 
-            print_str += 'Total Time: {:.3f},   Average Time: {:.5f}'.format(
-                timer.cumulative_time, timer.average_time)
+            print_str += "Total Time: {:.3f},   Average Time: {:.5f}".format(
+                timer.cumulative_time, timer.average_time
+            )
 
             print_strs.append(print_str)
-        full_print_str = '\n'.join(print_strs)
+        full_print_str = "\n".join(print_strs)
 
         return full_print_str
 
@@ -1150,7 +1281,7 @@ class Timer:
 
         self.count += 1
         if self.start_time is not None:
-            self.cumulative_time += (time() - self.start_time)
+            self.cumulative_time += time() - self.start_time
             self.start_time = None
             self.average_time = self.get_average()
 
@@ -1166,24 +1297,32 @@ def initialize_logger(str_filename: str = None):
     backup_count = 100
 
     # file_msg_format = '%(asctime)s %(levelname)-8s: %(message)s'
-    file_msg_format = '%(message)s'
+    file_msg_format = "%(message)s"
     # console_msg_format = '%(levelname)s: %(message)s'
-    console_msg_format = '%(message)s'
+    console_msg_format = "%(message)s"
 
     # * str_filename := filename.txt
     if str_filename is None:
-        file_name_format = '{year:04d}{month:02d}{day:02d}_'\
-            '{hour:02d}{minute:02d}{second:02d}.txt'
+        file_name_format = (
+            "{year:04d}{month:02d}{day:02d}_{hour:02d}{minute:02d}{second:02d}.txt"
+        )
         t = datetime.datetime.now()
-        file_name = file_name_format.format(year=t.year, month=t.month, day=t.day,
-                                            hour=t.hour, minute=t.minute, second=t.second)
+        file_name = file_name_format.format(
+            year=t.year,
+            month=t.month,
+            day=t.day,
+            hour=t.hour,
+            minute=t.minute,
+            second=t.second,
+        )
     else:
         file_name = str_filename
-    file_name = 'log/{}'.format(file_name)
+    file_name = "log/{}".format(file_name)
 
     # if there is no log directory, create it
     import pathlib
-    pathlib.Path('log').mkdir(parents=True, exist_ok=True)
+
+    pathlib.Path("log").mkdir(parents=True, exist_ok=True)
 
     # Generating Logger
     logger = logging.getLogger()
@@ -1191,7 +1330,8 @@ def initialize_logger(str_filename: str = None):
 
     # Set up logging to the logfile.
     file_handler = logging.handlers.RotatingFileHandler(
-        filename=file_name, maxBytes=max_bytes, backupCount=backup_count)
+        filename=file_name, maxBytes=max_bytes, backupCount=backup_count
+    )
     file_handler.setLevel(logging.INFO)
     file_formatter = logging.Formatter(file_msg_format)
     file_handler.setFormatter(file_formatter)
