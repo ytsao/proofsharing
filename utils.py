@@ -373,7 +373,7 @@ def load_net_from_eran_examples(file_name, dataset):
 
 
 def load_net_from_bridging_the_gap(file_name):
-    state_dict_load = torch.load(file_name, map_location=torch.device(DEVICE))
+    state_dict_load = torch.load(file_name, map_location=torch.device(DEVICE), weights_only=False)
 
     keys = list(state_dict_load.keys())
     conv_layers = []
@@ -463,7 +463,7 @@ def load_net_from_acasxu(file_name):
 
 
 def load_net_from_patch_attacks(file_name, dataset):
-    load_dict = torch.load(file_name, map_location=torch.device(DEVICE))
+    load_dict = torch.load(file_name, map_location=torch.device(DEVICE), weights_only=False)
     print(f"keys : {load_dict.keys()}")
     state_dict_load = load_dict["state_dict"]
     layers = load_dict["model_layers"]
