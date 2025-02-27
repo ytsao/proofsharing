@@ -20,7 +20,6 @@ from .networks import Network, Normalization  # noqa: F402
 
 PATH_EXAMPLES = "../../data/vnn/examples/"
 DEVICE = "cpu"
-INPUT_SIZE = (1, 28, 28)
 DOWNLOAD_DATA = True
 
 
@@ -175,8 +174,20 @@ def load_net_self_trained(path):
 
 def load_net_from_onnx(file_name, dataset):
     onnx_model = onnx.load(file_name)
+    sess = ort.InferenceSession(onnx_model.SerializeToString())
+    inputs = [i.name for i in sess.get_inputs()]
+    outputs = [o.name for o in sess.get_outputs()]
+
     # Access the model's graph
     graph = onnx_model.graph
+    all_inputs = [n for n in graph.input if n.name == inputs[0]][0]
+    all_outputs = [n for n in graph.output if n.name == outputs[0]][0]
+    num_inputs: int = 1
+    num_outputs: int = 1
+    for d in all_inputs.type.tensor_type.shape.dim:
+        num_inputs *= d.dim_value
+    for d in all_outputs.type.tensor_type.shape.dim:
+        num_outputs *= d.dim_value
 
     # Iterate through the nodes in the graph to find Conv operators
     kernel_size = []
@@ -244,7 +255,8 @@ def load_net_from_onnx(file_name, dataset):
     isLastLayerReLU = False
 
     # input_size = get_input_size_from_file(file_name)
-    input_size = get_input_size_from_dataset(dataset)
+    # input_size = get_input_size_from_dataset(dataset)
+    input_size = [num_inputs]
     for id, layer in enumerate(layers):
         if layer["type"] == "Linear":
             fc_layers.append(layer["parameters"][1])
@@ -265,7 +277,7 @@ def load_net_from_onnx(file_name, dataset):
         input_size,
         conv_layers,
         fc_layers,
-        10,
+        num_outputs,
         use_normalization,
         nonlinearity_after_conv,
         isLastLayerReLU=isLastLayerReLU,
@@ -373,7 +385,9 @@ def load_net_from_eran_examples(file_name, dataset):
 
 
 def load_net_from_bridging_the_gap(file_name):
-    state_dict_load = torch.load(file_name, map_location=torch.device(DEVICE), weights_only=False)
+    state_dict_load = torch.load(
+        file_name, map_location=torch.device(DEVICE), weights_only=False
+    )
 
     keys = list(state_dict_load.keys())
     conv_layers = []
@@ -463,7 +477,9 @@ def load_net_from_acasxu(file_name):
 
 
 def load_net_from_patch_attacks(file_name, dataset):
-    load_dict = torch.load(file_name, map_location=torch.device(DEVICE), weights_only=False)
+    load_dict = torch.load(
+        file_name, map_location=torch.device(DEVICE), weights_only=False
+    )
     print(f"keys : {load_dict.keys()}")
     state_dict_load = load_dict["state_dict"]
     layers = load_dict["model_layers"]
@@ -574,6 +590,8 @@ def get_input_size_from_dataset(dataset):
         input_size = (1, 28, 28)
     elif dataset == "cifar":
         input_size = (3, 32, 32)
+    elif dataset == "vnncomp":
+        input_size = (1, 5)  # TODO: Test on Acas XU
 
     return input_size
 
