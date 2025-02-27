@@ -188,11 +188,14 @@ def load_net_from_onnx(file_name, dataset):
         num_inputs *= d.dim_value
     for d in all_outputs.type.tensor_type.shape.dim:
         num_outputs *= d.dim_value
+    print(f"num_inputs: {num_inputs}")
+    print(f"num_outputs: {num_outputs}")
 
     # Iterate through the nodes in the graph to find Conv operators
     kernel_size = []
     stride = []
     padding = []
+    last_node_type: str = ""
     for node in graph.node:
         if node.op_type == "Conv":
             # Access the kernel size (kernel_shape) attribute
@@ -203,6 +206,8 @@ def load_net_from_onnx(file_name, dataset):
                     stride.append(attribute.ints)
                 elif attribute.name == "pads":
                     padding.append(attribute.ints)
+        # remeber the node type in the last node.
+        last_node_type = node.op_type
 
     pytorch_model = onnx2pytorch.ConvertModel(onnx.load(file_name), experimental=True)
     model_layers = []
@@ -210,11 +215,19 @@ def load_net_from_onnx(file_name, dataset):
     # TODO: We have to consider convolutional layers. this version takes linear layer into account only.
     current_conv_id: int = 0
     for p in pytorch_model.named_parameters():
+        print(f"name : {p[0]}")
         if p[0].startswith("Gemm") and ".weight" in p[0]:
             model_layers.append(
                 {"type": "Linear", "parameters": [p[1].shape[1], p[1].shape[0]]}
             )
+        elif p[0].startswith("MatMul") and ".weight" in p[0]:
+            print("Linear layer")
+            model_layers.append(
+                {"type": "Linear", "parameters": [p[1].shape[1], p[1].shape[0]]}
+            )
         elif p[0].startswith("Gemm") and ".bias" in p[0] and "output" not in p[0]:
+            model_layers.append({"type": "ReLU"})
+        elif p[0].startswith("MatMul") and ".bias" in p[0]:
             model_layers.append({"type": "ReLU"})
         elif p[0].startswith("Conv") and ".weight" in p[0]:
             model_layers.append(
@@ -263,10 +276,11 @@ def load_net_from_onnx(file_name, dataset):
         elif layer["type"] == "Conv2d":
             conv_layers.append(layer["parameters"])
         elif layer["type"] == "ReLU":
-            if id == len(layers) - 1:
+            if id == len(layers) - 1 and last_node_type == "ReLU":
                 isLastLayerReLU = True
 
     for key in state_dict_load.keys():
+        print(f"size = {state_dict_load[key].size()}")
         if ".weight" in key:
             weights.append(state_dict_load[key])
         elif ".bias" in key:
@@ -591,7 +605,7 @@ def get_input_size_from_dataset(dataset):
     elif dataset == "cifar":
         input_size = (3, 32, 32)
     elif dataset == "vnncomp":
-        input_size = (1, 5)  # TODO: Test on Acas XU
+        input_size = (1, 1, 5)  # TODO: Test on Acas XU
 
     return input_size
 
