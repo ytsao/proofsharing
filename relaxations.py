@@ -960,8 +960,6 @@ class Box(Zonotope):
     def A(self):
         if self._A is None:
             shapes = [-1] + list(self.lb.shape)[1:]
-            print(f"shapes = {shapes}")
-            print(f"lb shape = {self.lb.shape}")
 
             bounds_difference = ((self.ub - self.lb) / 2).view(-1)
             A = torch.diag(bounds_difference)
@@ -1652,11 +1650,7 @@ class Zonotope_Net:
         layer = self.net.layers[idx_layer]
         z = self.relaxation_at_layers[-1]
 
-        print(f"z.A before linear layer: {z.A}")
-
         a0 = layer(z.a0)
-        print(z.A)
-        print(f"layer = {layer}")
         A = self.net.bias_free_layers[idx_layer](z.A)
         z_new = self.relaxation_type(a0, A)
 
@@ -1669,15 +1663,9 @@ class Zonotope_Net:
         layer = self.net.layers[idx_layer]
         z = self.relaxation_at_layers[-1]
 
-        print(f"z.a0 before flatten layer: {z.a0.size()}")
-        print(f"z.A before flatten layer: {z.A.size()}")
-
         a0 = layer(z.a0)
         A = layer(z.A)
         z_new = self.relaxation_type(a0, A)
-
-        print(f"z_new.a0 after flatten layer: {z_new.a0.size()}")
-        print(f"z_new.A after flatten layer: {z_new.A.size()}")
 
         self.relaxation_at_layers.append(z_new)
 

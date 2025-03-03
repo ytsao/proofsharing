@@ -1,12 +1,12 @@
 import numpy as np
 import torch
 import torch.nn as nn
+
 # import config
 from .config import *
 
 
 class Normalization(nn.Module):
-
     def __init__(self, device, mean=0.1307, sigma=0.3081):
         super(Normalization, self).__init__()
         # self.mean = torch.FloatTensor([0.1307]).view((1, 1, 1, 1)).to(device)
@@ -14,21 +14,30 @@ class Normalization(nn.Module):
         mean = np.array(mean) if isinstance(mean, list) else np.array([mean])
         sigma = np.array(sigma) if isinstance(sigma, list) else np.array([sigma])
 
-        self.mean = nn.Parameter(torch.FloatTensor(
-            mean).view((1, -1, 1, 1)), False)
-        self.sigma = nn.Parameter(torch.FloatTensor(
-            sigma).view((1, -1, 1, 1)), False)
+        self.mean = nn.Parameter(torch.FloatTensor(mean).view((1, -1, 1, 1)), False)
+        self.sigma = nn.Parameter(torch.FloatTensor(sigma).view((1, -1, 1, 1)), False)
 
     def forward(self, x):
         return (x - self.mean) / self.sigma
 
 
 class Network(nn.Module):
-    def __init__(self, device, input_size, conv_layers, fc_layers, n_class=10,
-                 normalization=True, nonlinearity_after_conv='relu',
-                 auxiliary_outputs_layers=None, isLastLayerReLU=False, mean=0.1307, sigma=0.3081):
+    def __init__(
+        self,
+        device,
+        input_size,
+        conv_layers,
+        fc_layers,
+        n_class=10,
+        normalization=True,
+        nonlinearity_after_conv="relu",
+        auxiliary_outputs_layers=None,
+        isLastLayerReLU=False,
+        mean=0.1307,
+        sigma=0.3081,
+    ):
         super(Network, self).__init__()
-        self.input_size = input_size    
+        self.input_size = input_size
 
         if auxiliary_outputs_layers is None:
             self.use_auxiliary_outputs = False
@@ -39,17 +48,34 @@ class Network(nn.Module):
 
         self.isLastLayerReLU = isLastLayerReLU
         self.create_architecture(
-            input_size, n_class, device, conv_layers, fc_layers,
-            normalization, mean, sigma, nonlinearity_after_conv)
+            input_size,
+            n_class,
+            device,
+            conv_layers,
+            fc_layers,
+            normalization,
+            mean,
+            sigma,
+            nonlinearity_after_conv,
+        )
 
         self.create_bias_free_duplicate()
 
         self.single_sign_weight_layers = None
         self.absolute_layers_without_bias = None
-        
 
-    def create_architecture(self, input_size, n_class, device, conv_layers,
-                            fc_layers, normalization, mean, sigma, nonlinearity_after_conv):
+    def create_architecture(
+        self,
+        input_size,
+        n_class,
+        device,
+        conv_layers,
+        fc_layers,
+        normalization,
+        mean,
+        sigma,
+        nonlinearity_after_conv,
+    ):
         self.input_size = input_size
         self.n_class = n_class
 
@@ -64,46 +90,50 @@ class Network(nn.Module):
         else:
             layers = []
 
-        num_channels = self.create_conv_layers(layers, conv_layers,
-                                               nonlinearity_after_conv, input_size)
+        num_channels = self.create_conv_layers(
+            layers, conv_layers, nonlinearity_after_conv, input_size
+        )
         layers.append(nn.Flatten())
         self.idx_layer_full += 1
 
         num_channels = self.create_fc_layers(layers, fc_layers, num_channels)
-        assert(n_class == num_channels)
+        assert n_class == num_channels
 
         self.layers = nn.Sequential(*layers)
 
     def create_conv_layers(self, layers, conv_layers, nonlinearity_after_conv, img_dim):
-
         img_dim = list(img_dim)
 
         for conv_layer in conv_layers:
-
             if len(conv_layer) == 4:
                 n_channels, kernel_size, stride, padding = conv_layer
                 kernel_size_mp = kernel_size
             else:
                 n_channels, kernel_size, stride, padding, kernel_size_mp = conv_layer
 
-            layers.append(nn.Conv2d(img_dim[0], n_channels, kernel_size,
-                                    stride=stride, padding=padding))
+            layers.append(
+                nn.Conv2d(
+                    img_dim[0], n_channels, kernel_size, stride=stride, padding=padding
+                )
+            )
 
-            if nonlinearity_after_conv == 'max':
+            if nonlinearity_after_conv == "max":
                 layers.append(nn.MaxPool2d(kernel_size_mp))
-            elif nonlinearity_after_conv == 'average':
+            elif nonlinearity_after_conv == "average":
                 layers.append(nn.AvgPool2d(kernel_size_mp))
-            elif nonlinearity_after_conv == 'relu':
+            elif nonlinearity_after_conv == "relu":
                 kernel_size_mp = 1
                 layers.append(nn.ReLU())
             else:
-                config.logger.error('Unknown nonlinearity layer')
+                config.logger.error("Unknown nonlinearity layer")
 
             img_dim[0] = n_channels
-            img_dim[1] = ((img_dim[1] + 2 * padding - kernel_size) //
-                          stride) // kernel_size_mp + 1
-            img_dim[2] = ((img_dim[2] + 2 * padding - kernel_size) //
-                          stride) // kernel_size_mp + 1
+            img_dim[1] = (
+                (img_dim[1] + 2 * padding - kernel_size) // stride
+            ) // kernel_size_mp + 1
+            img_dim[2] = (
+                (img_dim[2] + 2 * padding - kernel_size) // stride
+            ) // kernel_size_mp + 1
 
             self.idx_layer_full += 2
             self.idx_layer_short += 1
@@ -111,9 +141,9 @@ class Network(nn.Module):
             if self.idx_layer_short in self.auxiliary_outputs_layers:
                 num_channels = n_channels * img_dim[1] * img_dim[2]
 
-                self.aux_outputs[self.idx_layer_full] = \
-                    nn.Sequential(nn.Flatten(),
-                                  nn.Linear(num_channels, self.n_class))
+                self.aux_outputs[self.idx_layer_full] = nn.Sequential(
+                    nn.Flatten(), nn.Linear(num_channels, self.n_class)
+                )
 
         num_dim = 1
         for i in img_dim:
@@ -126,7 +156,7 @@ class Network(nn.Module):
         for i, fc_size in enumerate(fc_layers):
             layers.append(nn.Linear(prev_fc_size, fc_size))
 
-            if i + (1-self.isLastLayerReLU) < len(fc_layers):
+            if i + (1 - self.isLastLayerReLU) < len(fc_layers):
                 layers.append(nn.ReLU())
 
             prev_fc_size = fc_size
@@ -135,8 +165,9 @@ class Network(nn.Module):
             self.idx_layer_short += 1
 
             if self.idx_layer_short in self.auxiliary_outputs_layers:
-                self.aux_outputs[self.idx_layer_full] = \
-                    nn.Sequential(nn.Linear(fc_size, self.n_class))
+                self.aux_outputs[self.idx_layer_full] = nn.Sequential(
+                    nn.Linear(fc_size, self.n_class)
+                )
 
         return prev_fc_size
 
@@ -153,14 +184,19 @@ class Network(nn.Module):
 
         for idx_layer, layer in enumerate(self.layers):
             if isinstance(layer, torch.nn.Linear):
-
                 new_layer = layer.__class__(
-                    layer.in_features, layer.out_features, bias=bias)
+                    layer.in_features, layer.out_features, bias=bias
+                )
 
             elif isinstance(layer, torch.nn.Conv2d):
                 new_layer = layer.__class__(
-                    layer.in_channels, layer.out_channels, layer.kernel_size,
-                    layer.stride, layer.padding, bias=bias)
+                    layer.in_channels,
+                    layer.out_channels,
+                    layer.kernel_size,
+                    layer.stride,
+                    layer.padding,
+                    bias=bias,
+                )
             else:
                 continue
 
@@ -178,10 +214,10 @@ class Network(nn.Module):
 
         for key in positive_weights_layers_with_bias.keys():
             self.single_sign_weight_layers[key] = {
-                'pos_with_bias': positive_weights_layers_with_bias[key],
-                'neg_with_bias': negative_weights_layers_with_bias[key],
-                'pos_without_bias': positive_weights_layers_without_bias[key],
-                'neg_without_bias': negative_weights_layers_without_bias[key],
+                "pos_with_bias": positive_weights_layers_with_bias[key],
+                "neg_with_bias": negative_weights_layers_with_bias[key],
+                "pos_without_bias": positive_weights_layers_without_bias[key],
+                "neg_without_bias": negative_weights_layers_without_bias[key],
             }
 
         self.update_split_positive_negative_weights()
@@ -192,13 +228,13 @@ class Network(nn.Module):
             neg_weight = self.layers[idx_layer].weight.data.clamp_max(0)
             bias = self.layers[idx_layer].bias
 
-            layer_dict['pos_with_bias'].weight.data = pos_weight
-            layer_dict['pos_without_bias'].weight.data = pos_weight
-            layer_dict['pos_with_bias'].bias = bias
+            layer_dict["pos_with_bias"].weight.data = pos_weight
+            layer_dict["pos_without_bias"].weight.data = pos_weight
+            layer_dict["pos_with_bias"].bias = bias
 
-            layer_dict['neg_with_bias'].weight.data = neg_weight
-            layer_dict['neg_without_bias'].weight.data = neg_weight
-            layer_dict['neg_with_bias'].bias = bias
+            layer_dict["neg_with_bias"].weight.data = neg_weight
+            layer_dict["neg_without_bias"].weight.data = neg_weight
+            layer_dict["neg_with_bias"].bias = bias
 
     def create_absolute_weights(self):
         self.absolute_layers_without_bias = self.duplicate_linear_layers()
@@ -237,10 +273,8 @@ class Network(nn.Module):
                     param.requires_grad_(True)
 
     def forward(self, x, aux_outputs=False):
-        if hasattr(self, 'use_auxiliary_outputs'):
-
-            if self.use_auxiliary_outputs and \
-                    (self.training or aux_outputs):
+        if hasattr(self, "use_auxiliary_outputs"):
+            if self.use_auxiliary_outputs and (self.training or aux_outputs):
                 outputs = []
                 for idx_layer, layer in enumerate(self.layers):
                     x = layer(x)

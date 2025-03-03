@@ -188,8 +188,6 @@ def load_net_from_onnx(file_name, dataset):
         num_inputs *= d.dim_value
     for d in all_outputs.type.tensor_type.shape.dim:
         num_outputs *= d.dim_value
-    print(f"num_inputs: {num_inputs}")
-    print(f"num_outputs: {num_outputs}")
 
     # Iterate through the nodes in the graph to find Conv operators
     kernel_size = []
@@ -215,13 +213,11 @@ def load_net_from_onnx(file_name, dataset):
     # TODO: We have to consider convolutional layers. this version takes linear layer into account only.
     current_conv_id: int = 0
     for p in pytorch_model.named_parameters():
-        print(f"name : {p[0]}")
         if p[0].startswith("Gemm") and ".weight" in p[0]:
             model_layers.append(
                 {"type": "Linear", "parameters": [p[1].shape[1], p[1].shape[0]]}
             )
         elif p[0].startswith("MatMul") and ".weight" in p[0]:
-            print("Linear layer")
             model_layers.append(
                 {"type": "Linear", "parameters": [p[1].shape[1], p[1].shape[0]]}
             )
@@ -267,8 +263,6 @@ def load_net_from_onnx(file_name, dataset):
     nonlinearity_after_conv = "relu"
     isLastLayerReLU = False
 
-    # input_size = get_input_size_from_file(file_name)
-    # input_size = get_input_size_from_dataset(dataset)
     input_size = [num_inputs]
     for id, layer in enumerate(layers):
         if layer["type"] == "Linear":
@@ -280,7 +274,6 @@ def load_net_from_onnx(file_name, dataset):
                 isLastLayerReLU = True
 
     for key in state_dict_load.keys():
-        print(f"size = {state_dict_load[key].size()}")
         if ".weight" in key:
             weights.append(state_dict_load[key])
         elif ".bias" in key:
