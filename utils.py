@@ -210,7 +210,6 @@ def load_net_from_onnx(file_name, dataset):
     pytorch_model = onnx2pytorch.ConvertModel(onnx.load(file_name), experimental=True)
     model_layers = []
 
-    # TODO: We have to consider convolutional layers. this version takes linear layer into account only.
     current_conv_id: int = 0
     for p in pytorch_model.named_parameters():
         if p[0].startswith("Gemm") and ".weight" in p[0]:
