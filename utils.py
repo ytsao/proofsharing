@@ -1085,7 +1085,8 @@ def load_dataset_selected_labels_only(
 
 def load_deepg_specs(idx, folder):
     # specs_file = '{}deepg/{}/{}.csv'.format(PATH_EXAMPLES, folder, idx)
-    specs_file = f"../../data/vnn/deepg/{folder}/{idx}.csv"
+    # specs_file = f"../../data/vnn/deepg/{folder}/{idx}.csv"
+    specs_file = f"./dep/vnn_bench/benchmarks/data/vnn/deepg/{folder}/{idx}.csv"
 
     with open(specs_file, "r") as fin:
         lines = fin.readlines()
