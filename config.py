@@ -1,4 +1,3 @@
-from .utils import initialize_logger, Stream2Logger
 import sys
 import logging
 
@@ -6,6 +5,8 @@ import logging
 def init_logger(str_filename: str = None):
     global logger
     global stream
+
+    from .utils import initialize_logger, Stream2Logger
 
     logger = initialize_logger(str_filename=str_filename)
     stream = Stream2Logger(sys.stderr, logger, logging.INFO)
